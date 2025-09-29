@@ -1,1 +1,653 @@
-<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Proyecto: OFFLINE</title><link rel="icon" type="image/png" href="assets/favicon.png"><meta name="description" content="Proyecto offline."></head><body><h1>Proyecto OFFLINE</h1><img src="assets/logo.png" style="width:96px"><ul><li><a href="assets/demand.png">Demanda</a></li><li><a href="assets/competitors.png">Competencia</a></li></ul><form action="https://formspree.io/f/TU_CODIGO" method="POST"><input name="nombre" placeholder="Nombre"><input name="email" type="email" placeholder="Email"><textarea name="mensaje" placeholder="Mensaje"></textarea><button type="submit">Enviar</button></form></body></html>
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proyecto: Planta de Tubos Recolectores de Sangre</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals & Professional Blue -->
+    <!-- Application Structure Plan: Se ha diseñado una aplicación de una sola página con formato de dashboard y navegación superior fija. La estructura se divide en secciones temáticas: 1) Introducción con KPIs clave, 2) Oportunidad de Mercado (demanda, competencia), 3) Plan de Negocio (proyecciones, segmentos), 4) Viabilidad Operativa (proceso, proveedores), y 5) Análisis Estratégico (FODA, costos). Esta arquitectura agrupa la información de manera lógica para un análisis de negocio, facilitando la comprensión y permitiendo al usuario saltar a las áreas de interés, a diferencia de la estructura académica del informe original. -->
+    <!-- Visualization & Content Choices: Se utilizan gráficos interactivos de Chart.js (líneas para tendencias, donuts para proporciones, barras para comparaciones) para visualizar datos cuantitativos de forma dinámica. El proceso de producción se representa con un diagrama de flujo interactivo hecho en HTML/CSS para mayor claridad. La información clave del informe se sintetiza en bloques de texto y tarjetas para una lectura rápida. La elección de cada visualización busca cumplir un objetivo específico (comparar, mostrar cambio, informar) y mejorar la interacción del usuario. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F5F5F4; /* warm-neutral-100 */
+            color: #292524; /* warm-neutral-800 */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+            max-width: 600px;
+            height: 320px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .kpi-card {
+            background-color: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .nav-link {
+            transition: color 0.2s;
+        }
+        .nav-link:hover {
+            color: #3B82F6; /* blue-500 */
+        }
+        .section-card {
+            background-color: #FFFFFF;
+            border-radius: 0.75rem;
+            padding: 2rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        /* Custom styles for Process Flow */
+        .process-flow {
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            text-align: center;
+            padding-top: 2rem; 
+        }
+        .flow-line {
+            border-top: 3px solid #BFDBFE; /* light-blue-200 */
+            position: absolute;
+            width: 90%;
+            top: 4.5rem; /* Alineado con el centro de los círculos */
+            left: 5%;
+            z-index: 10;
+        }
+        .process-step {
+            position: relative;
+            z-index: 20; /* Asegura que el paso esté sobre la línea */
+            width: 20%; /* Ajustado para 5 pasos */
+            padding: 0 0.5rem;
+        }
+        .step-icon {
+            background-color: #3B82F6; /* blue-500 */
+            color: white;
+            width: 5rem; /* Ajustado */
+            height: 5rem; /* Ajustado */
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 1.8rem; /* Ajustado */
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+        }
+        .step-title {
+            font-weight: 700;
+            color: #1F2937; /* gray-800 */
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+        .step-description {
+            font-size: 0.75rem; /* Ajustado para caber */
+            color: #6B7280; /* gray-500 */
+        }
+        /* Ajuste de media query para pantallas grandes */
+        @media (min-width: 1024px) {
+             .step-icon {
+                width: 6rem;
+                height: 6rem;
+                font-size: 2rem;
+            }
+            .step-title {
+                font-size: 1.125rem;
+            }
+            .step-description {
+                font-size: 0.875rem;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="text-xl font-bold text-gray-800">
+                Proyecto Tubos Recolectores
+            </div>
+            <div class="hidden md:flex space-x-8">
+                <a href="#oportunidad" class="text-gray-600 nav-link font-medium">Oportunidad</a>
+                <a href="#plan" class="text-gray-600 nav-link font-medium">Plan de Negocio</a>
+                <a href="#operaciones" class="text-gray-600 nav-link font-medium">Operaciones</a>
+                <a href="#estrategia" class="text-gray-600 nav-link font-medium">Estrategia</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-6 py-8 md:py-12 space-y-16">
+        
+        <!-- Section 1: Hero -->
+        <section id="introduccion" class="text-center">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Instalación de Planta Productora de Tubos Recolectores de Sangre</h1>
+            <p class="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto mb-8">Un proyecto estratégico para la sustitución de importaciones y el fortalecimiento de la soberanía sanitaria en Argentina.</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                <div class="kpi-card text-center">
+                    <p class="text-4xl font-bold text-blue-600" id="kpi-market-size">90 M</p>
+                    <p class="text-gray-500 mt-2">Demanda Anual Estimada</p>
+                </div>
+                <div class="kpi-card text-center">
+                    <p class="text-4xl font-bold text-blue-600" id="kpi-y1-share">15%</p>
+                    <p class="text-gray-500 mt-2">Cuota de Mercado (Año 1)</p>
+                </div>
+                <div class="kpi-card text-center">
+                    <p class="text-4xl font-bold text-blue-600" id="kpi-y5-share">33%</p>
+                    <p class="text-gray-500 mt-2">Cuota de Mercado (Año 5)</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: Oportunidad de Mercado -->
+        <section id="oportunidad" class="space-y-12">
+            <div class="text-center">
+                <h2 class="text-3xl font-bold text-gray-900">Análisis de la Oportunidad de Mercado</h2>
+                <p class="mt-2 text-lg text-gray-600 max-w-2xl mx-auto">El mercado argentino presenta una demanda estable y una alta dependencia de importaciones, creando un escenario ideal para la producción nacional.</p>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                <div class="section-card">
+                    <h3 class="font-semibold text-xl text-gray-800 mb-4 text-center">Evolución y Proyección de la Demanda</h3>
+                    <p class="text-center text-gray-500 mb-4">La demanda, impulsada por factores demográficos y sanitarios, muestra un crecimiento sostenido. Se estima un aumento acumulado del 15% en los próximos 5 años.</p>
+                    <div class="chart-container">
+                        <canvas id="demandChart"></canvas>
+                    </div>
+                </div>
+                <div class="section-card">
+                    <h3 class="font-semibold text-xl text-gray-800 mb-4 text-center">Panorama Competitivo Actual</h3>
+                     <p class="text-center text-gray-500 mb-4">El mercado está dominado por productos importados. El proyecto buscará capturar una porción significativa de esa cuota. Haga clic en una sección para ver detalles.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                        <div class="chart-container h-64 md:h-auto">
+                            <canvas id="competitorChart"></canvas>
+                        </div>
+                        <div id="competitor-info" class="p-4 bg-gray-50 rounded-lg min-h-[150px]">
+                            <h4 class="font-bold text-lg text-gray-700">Importados</h4>
+                            <p class="text-gray-600 text-sm">Precios bajos pero con alta vulnerabilidad al tipo de cambio, costos logísticos elevados y servicio postventa deficiente.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Plan de Negocio -->
+        <section id="plan" class="space-y-12">
+            <div class="text-center">
+                <h2 class="text-3xl font-bold text-gray-900">Nuestro Plan de Negocio</h2>
+                <p class="mt-2 text-lg text-gray-600 max-w-2xl mx-auto">Una estrategia clara para penetrar el mercado, con una producción escalable y un enfoque en segmentos clave.</p>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+                <div class="section-card lg:col-span-2">
+                    <h3 class="font-semibold text-xl text-gray-800 mb-4 text-center">Segmentos de Mercado Objetivo</h3>
+                    <p class="text-center text-gray-500 mb-4">Nos enfocaremos en los tres principales segmentos del mercado, con una estrategia diferenciada para cada uno.</p>
+                    <div class="chart-container h-72">
+                        <canvas id="segmentChart"></canvas>
+                    </div>
+                </div>
+                <div class="section-card lg:col-span-3">
+                    <h3 class="font-semibold text-xl text-gray-800 mb-4 text-center">Proyección de Crecimiento a 5 Años</h3>
+                    <p class="text-center text-gray-500 mb-4">El plan contempla un crecimiento agresivo para alcanzar el 33% del mercado, produciendo 30 millones de tubos anuales en el quinto año.</p>
+                     <div class="chart-container">
+                        <canvas id="growthChart"></canvas>
+                    </div>
+                </div>
+            </div>
+             <div class="section-card">
+                    <h3 class="font-semibold text-xl text-gray-800 mb-4 text-center">Mix de Producción Inicial (Año 1)</h3>
+                    <p class="text-center text-gray-500 mb-4">La producción inicial de 13.5 millones de tubos se centrará en los tipos de mayor demanda para asegurar una rápida penetración en el mercado.</p>
+                    <div class="chart-container max-w-md h-80">
+                        <canvas id="productionMixChart"></canvas>
+                    </div>
+                </div>
+        </section>
+
+        <!-- Section 4: Operaciones -->
+        <section id="operaciones" class="space-y-12">
+             <div class="text-center">
+                <h2 class="text-3xl font-bold text-gray-900">Viabilidad Operativa</h2>
+                <p class="mt-2 text-lg text-gray-600 max-w-2xl mx-auto">Un proceso productivo eficiente y una cadena de suministro robusta con fuerte anclaje nacional.</p>
+            </div>
+            <div class="section-card">
+                 <h3 class="font-semibold text-xl text-gray-800 mb-6 text-center">Proceso Productivo Optimizado</h3>
+                 <!-- Flujo de 5 pasos -->
+                 <div class="process-flow">
+                    <div class="flow-line"></div>
+                    <!-- Paso 1: Inyección -->
+                    <div class="process-step">
+                        <div class="step-icon">🏭</div>
+                        <h4 class="step-title">Inyección</h4>
+                        <p class="step-description">Moldeo de precisión de tubos (PP) y tapas (TPE/PE).</p>
+                    </div>
+                    <!-- Paso 2: Ensamblado -->
+                    <div class="process-step">
+                        <div class="step-icon">🔬</div>
+                        <h4 class="step-title">Ensamblado</h4>
+                        <p class="step-description">Dosificado de aditivos y sellado en Área Limpia (HEPA).</p>
+                    </div>
+                    <!-- Paso 3: Etiquetado -->
+                    <div class="process-step">
+                        <div class="step-icon">🏷️</div>
+                        <h4 class="step-title">Etiquetado</h4>
+                        <p class="step-description">Aplicación de etiquetas para lote y vencimiento.</p>
+                    </div>
+                    <!-- Paso 4: Calidad y Esterilización (Nuevo paso clave) -->
+                     <div class="process-step">
+                        <div class="step-icon">✅</div>
+                        <h4 class="step-title">Validación y Esterilización</h4>
+                        <p class="step-description">Control de calidad final y proceso de esterilización (requisito ANMAT).</p>
+                    </div>
+                     <!-- Paso 5: Empaquetado -->
+                     <div class="process-step">
+                        <div class="step-icon">📦</div>
+                        <h4 class="step-title">Empaquetado</h4>
+                        <p class="step-description">Producto final en gradillas y cajas para distribución.</p>
+                    </div>
+                 </div>
+            </div>
+             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="section-card">
+                    <h3 class="font-semibold text-xl text-gray-800 mb-4">Cadena de Suministro Nacional</h3>
+                    <p class="text-gray-600 mb-4">La estrategia se basa en priorizar proveedores locales para insumos clave, reduciendo la dependencia externa y los costos logísticos.</p>
+                    <ul class="space-y-3">
+                        <li class="flex items-start">
+                            <span class="text-blue-500 mr-3 mt-1">&#10003;</span>
+                            <div><strong class="font-semibold">Polipropileno (PP):</strong> Abastecido por Petrocuyo y Braskem, garantizando estabilidad.</div>
+                        </li>
+                         <li class="flex items-start">
+                            <span class="text-blue-500 mr-3 mt-1">&#10003;</span>
+                            <div><strong class="font-semibold">Elastómeros (Tapas):</strong> Proveedores locales como Kariprene y Laprene.</div>
+                        </li>
+                         <li class="flex items-start">
+                            <span class="text-blue-500 mr-3 mt-1">&#10003;</span>
+                            <div><strong class="font-semibold">Aditivos Químicos:</strong> Gestión a través de distribuidores nacionales especializados como Syntex.</div>
+                        </li>
+                    </ul>
+                </div>
+                 <div class="section-card">
+                    <h3 class="font-semibold text-xl text-gray-800 mb-4">Métricas de Eficiencia</h3>
+                    <p class="text-gray-600 mb-4">El análisis de tiempos revela una operación diseñada para la eficiencia, aunque identifica un cuello de botella a optimizar en el futuro.</p>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-baseline">
+                            <span class="font-medium text-gray-700">Takt Time (Ritmo de Demanda):</span>
+                            <span class="font-bold text-2xl text-blue-600">2.0s</span>
+                        </div>
+                        <div class="flex justify-between items-baseline">
+                            <span class="font-medium text-gray-700">Tiempo de Ciclo (Monoblock):</span>
+                            <span class="font-bold text-2xl text-green-600">1.8s</span>
+                        </div>
+                        <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md">
+                            <p class="font-bold">Cuello de Botella Identificado</p>
+                            <p>El empaquetado final (2.2s/tubo) es la principal restricción, a ser automatizada para cumplir la meta de 30M de unidades.</p>
+                        </div>
+                    </div>
+                 </div>
+             </div>
+        </section>
+
+        <!-- Section 5: Estrategia -->
+        <section id="estrategia" class="space-y-12">
+            <div class="text-center">
+                <h2 class="text-3xl font-bold text-gray-900">Análisis Estratégico y Financiero</h2>
+                <p class="mt-2 text-lg text-gray-600 max-w-2xl mx-auto">Una evaluación integral de la posición del proyecto y su estructura de costos.</p>
+            </div>
+             <div class="section-card">
+                <h3 class="font-semibold text-xl text-gray-800 mb-6 text-center">Análisis FODA</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-bold text-lg text-green-600 mb-2">Fortalezas</h4>
+                        <ul class="list-disc list-inside text-gray-600 space-y-1">
+                            <li>Demanda interna sostenida y concreta.</li>
+                            <li>Agilidad en la entrega vs. importados.</li>
+                            <li>Disponibilidad de materia prima (PP) nacional.</li>
+                            <li>Planta diseñada para alta automatización y eficiencia.</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-lg text-red-600 mb-2">Debilidades</h4>
+                        <ul class="list-disc list-inside text-gray-600 space-y-1">
+                            <li>Dependencia tecnológica de equipamiento importado.</li>
+                            <li>Necesidad de capacitación para mantenimiento especializado.</li>
+                            <li>Curva de aprendizaje inicial en producción.</li>
+                        </ul>
+                    </div>
+                     <div>
+                        <h4 class="font-bold text-lg text-blue-600 mb-2">Oportunidades</h4>
+                        <ul class="list-disc list-inside text-gray-600 space-y-1">
+                            <li>Sustitución de importaciones encarecidas.</li>
+                            <li>Pocos productores locales a gran escala.</li>
+                            <li>Políticas de fomento a la industria nacional.</li>
+                            <li>Demanda creciente del sector salud.</li>
+                        </ul>
+                    </div>
+                     <div>
+                        <h4 class="font-bold text-lg text-yellow-600 mb-2">Amenazas</h4>
+                        <ul class="list-disc list-inside text-gray-600 space-y-1">
+                            <li>Estabilidad cambiaria que abarate importaciones.</li>
+                            <li>Aumento de tarifas energéticas.</li>
+                            <li>Ingreso de nuevos competidores con alta inversión.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="section-card">
+                <h3 class="font-semibold text-xl text-gray-800 mb-6 text-center">Estructura de Costos y Punto de Equilibrio</h3>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                    <div>
+                        <p class="text-gray-600 mb-4">El modelo de negocio se basa en una alta automatización, lo que resulta en un Costo Variable Unitario (CVU) bajo y competitivo. Esto es clave para competir en licitaciones públicas y maximizar márgenes.</p>
+                        <ul class="space-y-2 mb-6">
+                            <li><strong class="font-semibold text-gray-800">Costos Variables:</strong> Principalmente materia prima (PP, TPE), aditivos químicos y packaging.</li>
+                            <li><strong class="font-semibold text-gray-800">Costos Fijos:</strong> Salarios (admin, QC, mant.), amortización de maquinaria e infraestructura.</li>
+                        </ul>
+                         <div class="bg-gray-100 p-4 rounded-lg">
+                            <h4 class="font-semibold text-gray-800">Punto de Equilibrio (BEP)</h4>
+                            <p class="text-gray-600 text-sm mt-1">El BEP indica el volumen de ventas necesario para cubrir todos los costos. La fórmula es:</p>
+                            <p class="text-center font-mono bg-white p-2 rounded mt-2 text-sm md:text-base">BEP (unidades) = CF / (P - CVU)</p>
+                        </div>
+                    </div>
+                    <div class="chart-container h-72">
+                        <canvas id="costChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-white border-t border-gray-200">
+        <div class="container mx-auto px-6 py-4 text-center text-gray-500">
+            <p>&copy; 2025 - Proyecto Final: Alvarez, Colillán, Echeverría, Sarena.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Data
+            const demandData = {
+                labels: ['2010', '2015', '2020', '2025', '2030'],
+                data: [81.58, 86.26, 90.75, 94.95, 98.81]
+            };
+
+            const competitorData = {
+                labels: ['Importados', 'DVS S.R.L.', 'Tecnon S.R.L.', 'Hermax', 'Nuestro Proyecto (Y5)'],
+                data: [45, 30, 15, 10, 0], // Initial data
+                info: {
+                    'Importados': {
+                        title: 'Importados',
+                        text: 'Precios bajos pero con alta vulnerabilidad al tipo de cambio, costos logísticos elevados y servicio postventa deficiente.'
+                    },
+                    'DVS S.R.L.': {
+                        title: 'DVS S.R.L.',
+                        text: 'Principal competidor nacional con posicionamiento premium, alta calidad certificada (ISO 13485) y precios superiores.'
+                    },
+                    'Tecnon S.R.L.': {
+                        title: 'Tecnon S.R.L.',
+                        text: 'Opera con planta propia en Berisso, enfocado en el sector público provincial con precios competitivos y capacidad limitada.'
+                    },
+                    'Hermax': {
+                        title: 'Hermax',
+                        text: 'Productor nacional de menor escala con alcance regional, enfocado en nichos (privado, veterinario) y con producción flexible.'
+                    },
+                    'Nuestro Proyecto (Y5)': {
+                        title: 'Nuestro Proyecto (Meta Año 5)',
+                        text: 'Objetivo de alcanzar el 33% del mercado con una planta automatizada, certificada y costos competitivos gracias al abastecimiento nacional.'
+                    }
+                }
+            };
+            
+            const segmentData = {
+                labels: ['Hospitales Públicos', 'Laboratorios y Clínicas Privadas', 'Veterinarias'],
+                data: [60, 35, 5]
+            };
+
+            const growthData = {
+                labels: ['Año 1', 'Año 2', 'Año 3', 'Año 4', 'Año 5'],
+                production: [13.5, 18.0, 22.5, 26.25, 30.0],
+                marketShare: [15.0, 20.0, 25.0, 29.2, 33.3]
+            };
+
+            const productionMixData = {
+                labels: ['EDTA 3k', 'Heparina de litio', 'Gel + Activador', 'Citrato Sodio 3.2%', 'Citrato Sodio 3.8%', 'Otros'],
+                data: [38, 20, 15, 10, 10, 7]
+            };
+
+            const costData = {
+                labels: ['Estructura de Costos'],
+                datasets: [
+                    { label: 'Costos Variables', data: [65], backgroundColor: '#3B82F6' },
+                    { label: 'Costos Fijos', data: [35], backgroundColor: '#93C5FD' }
+                ]
+            };
+
+            const chartColors = {
+                blue: '#3B82F6',
+                lightBlue: '#93C5FD',
+                green: '#10B981',
+                yellow: '#F59E0B',
+                red: '#EF4444',
+                purple: '#8B5CF6',
+                gray: '#6B7280'
+            };
+
+            // Chart Configs
+            const defaultChartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            font: {
+                                family: "'Inter', sans-serif"
+                            },
+                            padding: 20
+                        }
+                    },
+                    tooltip: {
+                        enabled: true,
+                        backgroundColor: '#292524',
+                        titleFont: {
+                            family: "'Inter', sans-serif",
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            family: "'Inter', sans-serif"
+                        }
+                    }
+                },
+                 scales: {
+                    x: {
+                        ticks: {
+                            font: { family: "'Inter', sans-serif" }
+                        },
+                        grid: { display: false }
+                    },
+                    y: {
+                        ticks: {
+                            font: { family: "'Inter', sans-serif" }
+                        },
+                         grid: { color: '#E7E5E4' }
+                    }
+                }
+            };
+
+            // Chart initializations
+            const ctxDemand = document.getElementById('demandChart').getContext('2d');
+            new Chart(ctxDemand, {
+                type: 'line',
+                data: {
+                    labels: demandData.labels,
+                    datasets: [{
+                        label: 'Demanda Anual (Millones de Tubos)',
+                        data: demandData.data,
+                        borderColor: chartColors.blue,
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: defaultChartOptions
+            });
+
+            const ctxCompetitor = document.getElementById('competitorChart').getContext('2d');
+            const competitorChart = new Chart(ctxCompetitor, {
+                type: 'doughnut',
+                data: {
+                    labels: competitorData.labels.slice(0,4), // Initially show without our project
+                    datasets: [{
+                        label: 'Cuota de Mercado',
+                        data: competitorData.data.slice(0,4),
+                        backgroundColor: [chartColors.red, chartColors.purple, chartColors.yellow, chartColors.gray],
+                        borderColor: '#FFFFFF',
+                        borderWidth: 2,
+                    }]
+                },
+                options: { ...defaultChartOptions,
+                    onClick: (evt, elements) => {
+                        if (elements.length > 0) {
+                            const index = elements[0].index;
+                            const label = competitorChart.data.labels[index];
+                            const info = competitorData.info[label];
+                            const infoBox = document.getElementById('competitor-info');
+                            infoBox.innerHTML = `<h4 class="font-bold text-lg text-gray-700">${info.title}</h4><p class="text-gray-600 text-sm">${info.text}</p>`;
+                        }
+                    },
+                    plugins: { legend: { display: true, position: 'right' } }
+                }
+            });
+            
+            setTimeout(() => {
+                competitorChart.data.labels = competitorData.labels;
+                competitorChart.data.datasets[0].data = [25, 20, 10, 5, 33]; // Simulate updated data with our project
+                competitorChart.data.datasets[0].backgroundColor = [chartColors.red, chartColors.purple, chartColors.yellow, chartColors.gray, chartColors.green];
+                competitorChart.update();
+            }, 5000); // Animate change after 5 seconds
+
+            const ctxSegment = document.getElementById('segmentChart').getContext('2d');
+            new Chart(ctxSegment, {
+                type: 'bar',
+                data: {
+                    labels: segmentData.labels,
+                    datasets: [{
+                        label: '% del Mercado',
+                        data: segmentData.data,
+                        backgroundColor: [chartColors.blue, chartColors.lightBlue, chartColors.green],
+                        // Eliminamos yAxisID: 'y' para evitar conflictos, ya que el indexAxis es 'y'
+                    }]
+                },
+                options: { ...defaultChartOptions, 
+                    indexAxis: 'y', 
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: {
+                            // Definición del eje X (Horizontal) para barras
+                            beginAtZero: true,
+                            max: 100, // Aseguramos que la escala vaya hasta 100
+                            ticks: { 
+                                callback: (value) => `${value}%`, // Mostrar ticks como porcentaje
+                                font: { family: "'Inter', sans-serif" }
+                            }, 
+                            grid: { display: true, color: '#E7E5E4' } // Hacemos visible la grilla horizontal
+                        },
+                        y: {
+                            // Definición del eje Y (Vertical) para categorías
+                            grid: { display: false },
+                            ticks: { font: { family: "'Inter', sans-serif" } }
+                        }
+                    }
+                }
+            });
+            
+            const ctxGrowth = document.getElementById('growthChart').getContext('2d');
+            new Chart(ctxGrowth, {
+                type: 'bar',
+                data: {
+                    labels: growthData.labels,
+                    datasets: [
+                        {
+                            label: 'Producción (Millones de tubos)',
+                            data: growthData.production,
+                            backgroundColor: chartColors.blue,
+                            yAxisID: 'y',
+                        },
+                        {
+                            label: 'Cuota de Mercado (%)',
+                            data: growthData.marketShare,
+                            borderColor: chartColors.green,
+                            type: 'line',
+                            yAxisID: 'y1',
+                            tension: 0.3
+                        }
+                    ]
+                },
+                 options: {
+                    ...defaultChartOptions,
+                    scales: {
+                        x: { ...defaultChartOptions.scales.x },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: { display: true, text: 'Millones de Tubos'}
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                             title: { display: true, text: 'Cuota de Mercado (%)'},
+                            grid: {
+                                drawOnChartArea: false, 
+                            },
+                        },
+                    }
+                }
+            });
+
+             const ctxProductionMix = document.getElementById('productionMixChart').getContext('2d');
+             new Chart(ctxProductionMix, {
+                type: 'pie',
+                data: {
+                    labels: productionMixData.labels,
+                    datasets: [{
+                        label: '% de Producción',
+                        data: productionMixData.data,
+                        backgroundColor: [chartColors.blue, chartColors.purple, chartColors.green, chartColors.yellow, chartColors.lightBlue, chartColors.gray]
+                    }]
+                },
+                options: {...defaultChartOptions, plugins: { legend: { position: 'right' } } }
+             });
+
+             const ctxCost = document.getElementById('costChart').getContext('2d');
+             new Chart(ctxCost, {
+                 type: 'bar',
+                 data: costData,
+                 options: {
+                    ...defaultChartOptions,
+                    indexAxis: 'y',
+                    scales: {
+                        x: { stacked: true, ticks: { callback: (value) => `${value}%` } },
+                        y: { stacked: true, grid: { display: false } }
+                    },
+                    plugins: { ...defaultChartOptions.plugins, tooltip: { callbacks: { label: (context) => `${context.dataset.label}: ${context.raw}%` } } }
+                 }
+             })
+
+        });
+    </script>
+</body>
+</html>
+
+Commit
