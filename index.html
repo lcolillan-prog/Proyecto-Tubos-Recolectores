@@ -1,1 +1,716 @@
-<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Proyecto: INTERACTIVO</title><script src="https://cdn.tailwindcss.com"></script></head><body class="p-6"><h1 class="text-2xl font-bold">Proyecto INTERACTIVO</h1><p>Esta versión utiliza CDNs.</p></body></html>
+﻿<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Proyecto: Planta de Tubos Recolectores de Sangre</title>
+
+  <!-- Tailwind (CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Chart.js + DataLabels (para porcentajes) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+  <!-- Fuente del sistema (rápida y legible en proyector) -->
+  <style>
+    :root{
+      --bg:#F5F5F4; --text:#1f2937; --muted:#6B7280; --card:#FFFFFF; --primary:#2563EB;
+      --spotlight-dim: .25;
+    }
+    body{ background:var(--bg); color:var(--text); }
+    /* Spotlight: atenúa todo salvo la sección activa */
+    body.spotlight main section{ opacity: var(--spotlight-dim); transition: opacity .2s; }
+    body.spotlight main section.active{ opacity: 1; }
+    /* Alto contraste para proyectores complejos */
+    body.contrast { background:#0b0f1a; color:#e6eaf2; }
+    body.contrast header, body.contrast .bg-white{ background:#111827 !important; }
+    body.contrast .text-gray-600{ color:#cbd5e1 !important; }
+
+    /* Barra de progreso superior */
+    #page-progress{ position:fixed; left:0; top:0; height:4px; width:0; z-index:60;
+      background:linear-gradient(90deg,#2563EB,#22c55e);
+    }
+
+    /* Impresión / PDF sin controles */
+    @media print{ header, .presenter-controls, #page-progress{ display:none } }
+  </style>
+  <style>
+    /* Resaltado suave para la sección activa y transición */
+    main section{ transition: box-shadow .25s ease, transform .18s ease, opacity .2s; }
+    main section.active{ box-shadow: 0 10px 30px rgba(15,23,42,0.08); transform: translateY(-4px); }
+    /* Asegurar espacio superior cuando se usa scroll con offset */
+    :root{ --scroll-margin: 18px; --small-text: 14px; }
+    /* Mejor legibilidad para textos pequeños en pantallas y proyectores */
+    .text-sm{ font-size: var(--small-text) !important; }
+    /* Scroll-snap para modo presentación: cada sección encaja en pantalla */
+    main.present-snap{ scroll-snap-type: y mandatory; }
+    main.present-snap > section{ scroll-snap-align: start; min-height: calc(100vh - 72px); }
+  </style>
+</head>
+
+<body class="antialiased">
+  <!-- Progreso -->
+  <div id="page-progress"></div>
+
+  <!-- Header -->
+  <header class="bg-white/90 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+    <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+      <div class="text-xl md:text-2xl font-extrabold text-gray-900 flex items-center gap-3">
+        <span>Proyecto Tubos Recolectores</span>
+      </div>
+      <div id="topnav" class="hidden md:flex gap-8 font-semibold">
+        <a href="#introduccion" class="text-gray-600 hover:text-blue-600">Inicio</a>
+        <a href="#oportunidad" class="text-gray-600 hover:text-blue-600">Oportunidad</a>
+        <a href="#plan" class="text-gray-600 hover:text-blue-600">Plan de Negocio</a>
+        <a href="#operaciones" class="text-gray-600 hover:text-blue-600">Operaciones</a>
+  <a href="#estrategia" class="text-gray-600 hover:text-blue-600">Estrategia</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="container mx-auto px-6 md:px-8 py-8 md:py-12 space-y-24">
+
+    <!-- INTRO -->
+    <section id="introduccion" class="space-y-6 md:space-y-8">
+      <h1 class="text-4xl md:text-6xl font-extrabold text-gray-900 leading-tight text-center">
+        Instalación de Planta Productora de Tubos Recolectores de Sangre
+      </h1>
+      <p class="text-lg md:text-xl text-gray-600 text-center max-w-3xl mx-auto">
+        Un proyecto estratégico para la sustitución de importaciones y el fortalecimiento
+        de la soberanía sanitaria en Argentina.
+      </p>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        <div class="bg-white rounded-xl p-6 shadow hover:shadow-lg transition text-center">
+          <div class="text-4xl font-extrabold text-blue-600">90 M</div>
+          <p class="text-gray-500 mt-2">Demanda Anual Estimada</p>
+        </div>
+        <div class="bg-white rounded-xl p-6 shadow hover:shadow-lg transition text-center">
+          <div class="text-4xl font-extrabold text-blue-600">15%</div>
+          <p class="text-gray-500 mt-2">Cuota de Mercado (Año 1)</p>
+        </div>
+        <div class="bg-white rounded-xl p-6 shadow hover:shadow-lg transition text-center">
+          <div class="text-4xl font-extrabold text-blue-600">33%</div>
+          <p class="text-gray-500 mt-2">Cuota de Mercado (Año 5)</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- OPORTUNIDAD -->
+    <section id="oportunidad" class="space-y-10">
+      <div class="text-center space-y-2">
+        <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900">Análisis de la Oportunidad de Mercado</h2>
+        <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+          Mercado con demanda estable y alta dependencia de importaciones: oportunidad clara para producción local.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+        <!-- Demanda -->
+        <div class="bg-white rounded-xl p-6 shadow">
+          <h3 class="font-bold text-xl text-center mb-2">Evolución y Proyección de la Demanda</h3>
+          <p class="text-center text-gray-500 mb-4">Crecimiento sostenido (+15% acumulado a 5 años).</p>
+          <div class="relative mx-auto max-w-xl h-[340px] md:h-[420px]">
+            <canvas id="demandChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Competencia -->
+        <div class="bg-white rounded-xl p-6 shadow">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="font-bold text-xl text-center w-full">Panorama Competitivo</h3>
+          </div>
+          <p class="text-center text-gray-500 mb-4">Hacé clic en la leyenda o usá el botón para simular el Año 5.</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+            <div class="relative h-[280px] md:h-[380px]">
+              <canvas id="competitorChart"></canvas>
+            </div>
+            <div class="space-y-3">
+              <div id="competitor-info" class="bg-gray-50 rounded-lg p-4 text-sm leading-6">
+                <h4 class="font-bold text-gray-700">Importados</h4>
+                <p class="text-gray-600">
+                  Precios bajos pero con alta vulnerabilidad al tipo de cambio, costos logísticos elevados y servicio postventa deficiente.
+                </p>
+              </div>
+              <div class="flex gap-2 flex-wrap">
+                <button data-year="1" id="btnY1" class="year-btn w-full md:w-auto px-3 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold hover:bg-gray-300">Año 1</button>
+                <button data-year="2" id="btnY2" class="year-btn w-full md:w-auto px-3 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold hover:bg-gray-300">Año 2</button>
+                <button data-year="3" id="btnY3" class="year-btn w-full md:w-auto px-3 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold hover:bg-gray-300">Año 3</button>
+                <button data-year="4" id="btnY4" class="year-btn w-full md:w-auto px-3 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold hover:bg-gray-300">Año 4</button>
+                <button data-year="5" id="btnY5" class="year-btn w-full md:w-auto px-3 py-2 rounded-lg bg-blue-600 text-white font-bold hover:bg-blue-700">Año 5</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PLAN -->
+    <section id="plan" class="space-y-10">
+      <div class="text-center space-y-2">
+        <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900">Nuestro Plan de Negocio</h2>
+        <p class="text-lg text-gray-600 max-w-2xl mx-auto">Producción escalable con foco en segmentos clave.</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+        <div class="bg-white rounded-xl p-6 shadow lg:col-span-2">
+          <h3 class="font-bold text-xl text-center mb-2">Segmentos de Mercado Objetivo</h3>
+          <p class="text-center text-gray-500 mb-4">Enfocados en tres segmentos principales.</p>
+          <div class="relative h-[320px]">
+            <canvas id="segmentChart"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl p-6 shadow lg:col-span-3">
+          <h3 class="font-bold text-xl text-center mb-2">Proyección de Crecimiento a 5 Años</h3>
+          <p class="text-center text-gray-500 mb-4">Meta de 30M de tubos/año y 33% de cuota.</p>
+          <div class="relative h-[360px]">
+            <canvas id="growthChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl p-6 shadow">
+        <h3 class="font-bold text-xl text-center mb-2">Mix de Producción Inicial (Año 1)</h3>
+        <p class="text-center text-gray-500 mb-4">Prioriza los tipos de mayor demanda para penetración rápida.</p>
+        <div class="relative mx-auto max-w-xl h-[320px]">
+          <canvas id="productionMixChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- OPERACIONES -->
+    <section id="operaciones" class="space-y-10">
+      <div class="text-center space-y-2">
+        <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900">Viabilidad Operativa</h2>
+        <p class="text-lg text-gray-600 max-w-2xl mx-auto">Proceso eficiente y cadena de suministro con anclaje nacional.</p>
+      </div>
+
+      <div class="bg-white rounded-xl p-6 shadow">
+        <h3 class="font-bold text-xl text-center mb-6">Proceso Productivo Optimizado</h3>
+        <div class="relative flex justify-between items-start text-center pt-6">
+          <div class="absolute left-[5%] top-[56px] w-[90%] border-t-4 border-blue-200"></div>
+          <div class="relative z-10 w-1/5 px-2">
+            <div class="bg-blue-600 text-white w-20 h-20 rounded-full grid place-items-center mx-auto mb-3 text-2xl shadow">🏭</div>
+            <p class="font-bold text-gray-800">Inyección</p>
+            <p class="text-xs text-gray-500">Moldeo de tubos (PP) y tapas (TPE/PE).</p>
+          </div>
+          <div class="relative z-10 w-1/5 px-2">
+            <div class="bg-blue-600 text-white w-20 h-20 rounded-full grid place-items-center mx-auto mb-3 text-2xl shadow">🔬</div>
+            <p class="font-bold text-gray-800">Ensamblado</p>
+            <p class="text-xs text-gray-500">Dosificado y sellado en Área Limpia (HEPA).</p>
+          </div>
+          <div class="relative z-10 w-1/5 px-2">
+            <div class="bg-blue-600 text-white w-20 h-20 rounded-full grid place-items-center mx-auto mb-3 text-2xl shadow">🏷️</div>
+            <p class="font-bold text-gray-800">Etiquetado</p>
+            <p class="text-xs text-gray-500">Lote y vencimiento.</p>
+          </div>
+          <div class="relative z-10 w-1/5 px-2">
+            <div class="bg-blue-600 text-white w-20 h-20 rounded-full grid place-items-center mx-auto mb-3 text-2xl shadow">✅</div>
+            <p class="font-bold text-gray-800">Validación y Esterilización</p>
+            <p class="text-xs text-gray-500">Control final y esterilización (ANMAT).</p>
+          </div>
+          <div class="relative z-10 w-1/5 px-2">
+            <div class="bg-blue-600 text-white w-20 h-20 rounded-full grid place-items-center mx-auto mb-3 text-2xl shadow">📦</div>
+            <p class="font-bold text-gray-800">Empaquetado</p>
+            <p class="text-xs text-gray-500">Gradillas y cajas para distribución.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="bg-white rounded-xl p-6 shadow">
+          <h3 class="font-bold text-xl mb-3">Cadena de Suministro Nacional</h3>
+          <ul class="space-y-3 text-gray-700">
+            <li><b>Polipropileno (PP):</b> Petrocuyo y Braskem.</li>
+            <li><b>Elastómeros (Tapas):</b> Kariprene y Laprene.</li>
+            <li><b>Aditivos Químicos:</b> Distribuidores nacionales (p.ej. Syntex).</li>
+          </ul>
+        </div>
+        <div class="bg-white rounded-xl p-6 shadow">
+          <h3 class="font-bold text-xl mb-3">Métricas de Eficiencia</h3>
+          <div class="flex justify-between items-baseline">
+            <span class="text-gray-700">Takt Time (Ritmo de Demanda):</span>
+            <span class="font-extrabold text-2xl text-blue-600">2.0s</span>
+          </div>
+          <div class="flex justify-between items-baseline">
+            <span class="text-gray-700">Tiempo de Ciclo (Monoblock):</span>
+            <span class="font-extrabold text-2xl text-green-600">1.8s</span>
+          </div>
+          <div class="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 p-4 rounded mt-4">
+            <p class="font-bold">Cuello de Botella</p>
+            <p>Empaquetado final (2.2s/tubo). Sugerido: automatizar para sostener 30M/año.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ESTRATEGIA -->
+    <section id="estrategia" class="space-y-10">
+      <div class="text-center space-y-2">
+        <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900">Análisis Estratégico y Financiero</h2>
+        <p class="text-lg text-gray-600 max-w-2xl mx-auto">Estructura de costos competitiva con CVU bajo por automatización.</p>
+      </div>
+
+      <div class="bg-white rounded-xl p-6 shadow">
+        <h3 class="font-bold text-xl text-center mb-4">Estructura de Costos y Punto de Equilibrio</h3>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+          <div class="space-y-3">
+            <ul class="text-gray-700 space-y-2">
+              <li><b>Costos Variables:</b> PP, TPE, aditivos, packaging.</li>
+              <li><b>Costos Fijos:</b> Salarios (admin, QC, mant.), amortización e infraestructura.</li>
+            </ul>
+            <div class="bg-gray-100 p-4 rounded-lg">
+              <h4 class="font-semibold text-gray-800">Punto de Equilibrio (BEP)</h4>
+              <p class="text-gray-600 text-sm mt-1">Volumen necesario para cubrir todos los costos:</p>
+              <p class="text-center font-mono bg-white p-2 rounded mt-2 text-sm md:text-base">
+                BEP (unidades) = CF / (P - CVU)
+              </p>
+            </div>
+          </div>
+          <div class="relative h-[280px]">
+            <canvas id="costChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    
+  </main>
+
+  <!-- Controles del presentador -->
+  <div class="presenter-controls fixed right-4 bottom-4 z-50 flex gap-2 flex-wrap">
+    <button id="btn-present" class="px-3 py-2 rounded-lg font-bold text-white bg-blue-600 shadow hover:bg-blue-700">Presentar</button>
+    <button id="btn-prev" class="px-3 py-2 rounded-lg font-bold bg-white border shadow">←</button>
+    <button id="btn-next" class="px-3 py-2 rounded-lg font-bold bg-white border shadow">→</button>
+    <button id="btn-zoom-in" class="px-3 py-2 rounded-lg font-bold bg-white border shadow">A+</button>
+    <button id="btn-zoom-out" class="px-3 py-2 rounded-lg font-bold bg-white border shadow">A-</button>
+    <button id="btn-contrast" class="px-3 py-2 rounded-lg font-bold bg-white border shadow">Alto contraste</button>
+  </div>
+
+  <!-- Lógica de presentación + Charts -->
+  <script>
+  // ================== PRESENTACIÓN & NAVEGACIÓN ==================
+  (function(){
+    const sections = Array.from(document.querySelectorAll('main section'));
+    const links = Array.from(document.querySelectorAll('#topnav a'));
+    const progress = document.getElementById('page-progress');
+
+    let idx = 0, presenting = false, zoom = 1;
+
+    const SCROLL_MARGIN = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--scroll-margin')) || 18;
+    function setActive(i, smooth=true){
+      idx = Math.max(0, Math.min(i, sections.length-1));
+      const target = sections[idx];
+      sections.forEach(s => s.classList.remove('active'));
+      target.classList.add('active');
+
+      // Scroll ajustado teniendo en cuenta el header sticky para evitar que el título quede tapado
+      if (smooth){
+        const header = document.querySelector('header');
+        const headerHeight = header ? header.getBoundingClientRect().height : 0;
+        const targetRect = target.getBoundingClientRect();
+        const scrollTop = window.scrollY || window.pageYOffset;
+        const targetTop = scrollTop + targetRect.top - headerHeight - SCROLL_MARGIN; // margen extra configurable
+        window.scrollTo({ top: targetTop, behavior: 'smooth' });
+      }
+
+      // nav activo
+      const id = '#'+target.id;
+      links.forEach(a => a.classList.toggle('text-blue-600', a.getAttribute('href')===id));
+      // progreso
+      progress.style.width = ((idx+1)/sections.length*100)+'%';
+      // hash (sin generar salto instantáneo)
+      history.replaceState(null,'',id);
+    }
+
+    function togglePresent(){
+      presenting = !presenting;
+      const mainEl = document.querySelector('main');
+      document.body.classList.toggle('spotlight', presenting);
+      const btn = document.getElementById('btn-present');
+      btn.textContent = presenting ? 'Salir' : 'Presentar';
+      if (presenting){
+        // Activar scroll-snap y bloquear scroll del body para que cada sección ocupe la pantalla
+        if (mainEl) mainEl.classList.add('present-snap');
+        document.body.style.overflow = 'hidden';
+        // Posicionar en la primera sección con animación
+        setActive(0, true);
+      }else{
+        if (mainEl) mainEl.classList.remove('present-snap');
+        document.body.style.overflow = '';
+        // Al salir, mantener la sección actual sin animación
+        setActive(idx, false);
+      }
+    }
+
+    function setZoom(delta){
+      zoom = Math.max(0.85, Math.min(1.35, zoom + delta));
+      document.documentElement.style.fontSize = (zoom*100)+'%';
+    }
+
+    // Botones
+    document.getElementById('btn-present').onclick = togglePresent;
+    document.getElementById('btn-prev').onclick = ()=>setActive(idx-1);
+    document.getElementById('btn-next').onclick = ()=>setActive(idx+1);
+    document.getElementById('btn-zoom-in').onclick = ()=>setZoom(0.05);
+    document.getElementById('btn-zoom-out').onclick = ()=>setZoom(-0.05);
+    document.getElementById('btn-contrast').onclick = ()=>document.body.classList.toggle('contrast');
+
+    // Teclado
+    window.addEventListener('keydown', (e)=>{
+      if (e.key==='ArrowRight') setActive(idx+1);
+      if (e.key==='ArrowLeft') setActive(idx-1);
+      if (e.key==='p' || e.key==='P') togglePresent();
+      if (e.key==='+') setZoom(0.05);
+      if (e.key==='-') setZoom(-0.05);
+      if (e.key==='h' || e.key==='H') document.body.classList.toggle('contrast');
+    });
+
+    // Scrollspy con IntersectionObserver (marca sección activa y dispara charts)
+    const io = new IntersectionObserver((entries)=>{
+      const visible = entries.filter(e=>e.isIntersecting).sort((a,b)=>b.intersectionRatio-a.intersectionRatio);
+      if (visible[0]) {
+        const i = sections.indexOf(visible[0].target);
+        setActive(i, false);
+      }
+    }, { rootMargin:'-45% 0px -45% 0px', threshold:[0,.25,.5,.75,1] });
+
+    sections.forEach(s=>io.observe(s));
+
+    // Inicio
+    const start = sections.findIndex(s => '#'+s.id === location.hash);
+    setActive(start>=0?start:0,false);
+
+    // Exponer helpers globales para charts (para el lazy-init)
+    window.__sectionHelpers = { setActive, sections };
+  })();
+
+  // ================== CHARTS (LAZY INIT + MEJORAS) ==================
+  Chart.register(ChartDataLabels); // Plugin para porcentajes
+
+  // Colores consistentes
+  const chartColors = {
+    blue: '#3B82F6', lightBlue: '#93C5FD', green:'#10B981',
+    yellow:'#F59E0B', red:'#EF4444', purple:'#8B5CF6', gray:'#6B7280'
+  };
+
+  // Opciones base
+  const baseOpts = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins:{
+      legend:{ position:'bottom', labels:{ font:{ family:"Inter, system-ui, sans-serif", size:14 }, padding:16 } },
+      tooltip:{ enabled:true },
+      // Opciones por defecto para datalabels: fondo semi-oscuro, padding y tamaño legible
+      datalabels: {
+        color: '#ffffff',
+        backgroundColor: 'rgba(0,0,0,0.55)',
+        borderRadius: 6,
+        padding: 6,
+        font: { weight: '700', size: 12 },
+        clamp: true,
+        anchor: 'center',
+        align: 'center'
+      }
+    },
+    scales:{
+      x:{ grid:{ display:false }, ticks:{ font:{ family:"Inter, system-ui, sans-serif", size:13 } } },
+      y:{ grid:{ color:'#E7E5E4' }, ticks:{ font:{ family:"Inter, system-ui, sans-serif", size:13 } } }
+    }
+  };
+
+  // Datos
+  const demandData = {
+    labels: ['2010','2015','2020','2025','2030'],
+    data: [81.58,86.26,90.75,94.95,98.81]
+  };
+
+  const competitorInfo = {
+    base: {
+      'Importados': 'Precios bajos pero alta vulnerabilidad al tipo de cambio, costos logísticos elevados y servicio postventa deficiente.',
+      'DVS S.R.L.': 'Principal competidor nacional (ISO 13485), posicionamiento premium.',
+      'Tecnon S.R.L.': 'Planta en Berisso; foco en sector público provincial, buena relación precio/capacidad.',
+      'Hermax': 'Productor nacional de menor escala con alcance regional y producción flexible.'
+    },
+    year5: {
+      'Importados': 'Precios bajos pero alta vulnerabilidad al tipo de cambio, costos logísticos elevados y servicio postventa deficiente.',
+      'DVS S.R.L.': 'Principal competidor nacional (ISO 13485), posicionamiento premium.',
+      'Tecnon S.R.L.': 'Planta en Berisso; foco en sector público provincial, buena relación precio/capacidad.',
+      'Hermax': 'Objetivo: 33% del mercado con planta automatizada y costos competitivos.'
+    }
+  };
+
+  const segmentData = { labels:['Hospitales Públicos','Privados','Veterinarias'], data:[60,35,5] };
+  const growthData  = { labels:['Año 1','Año 2','Año 3','Año 4','Año 5'], production:[13.5,18,22.5,26.25,30.0], marketShare:[15,20,25,29.2,33.3] };
+  const mixData     = { labels:['EDTA 3k','Heparina de litio','Gel + Activador','Citrato 3.2%','Citrato 3.8%','Otros'], data:[38,20,15,10,10,7] };
+
+  // Lazy-init: solo crea el chart cuando entra a viewport
+  const created = {};
+
+  // Datos por año para el gráfico competitivo (ejemplo simple)
+  const competitorByYear = {
+    1: [45,30,15,10],
+    2: [38,30,17,15],
+    3: [33,27,15,25],
+    4: [28,24,15,33],
+    5: [25,22,20,33] // año 5: Hermax (nuestro proyecto) alcanza el 33%
+  };
+  const competitorColors = [chartColors.red, chartColors.purple, chartColors.yellow, chartColors.green];
+
+  function initDemand(){
+    if (created.demand) return;
+    const ctx = document.getElementById('demandChart');
+    if (!ctx) return;
+    created.demand = new Chart(ctx.getContext('2d'),{
+      type:'line',
+      data:{ labels:demandData.labels, datasets:[{
+        label:'Demanda Anual (Millones de Tubos)',
+        data:demandData.data,
+        borderColor:chartColors.blue,
+        backgroundColor:'rgba(59,130,246,.12)',
+        fill:true, tension:.3
+      }] },
+      options: {
+        ...baseOpts,
+        scales: {
+          x: baseOpts.scales.x,
+          y: { ...baseOpts.scales.y, min:80, max:100, title:{display:true, text:'Millones de Tubos'} }
+        }
+      }
+    });
+  }
+
+  function initCompetitors(){
+    if (created.competitors) return;
+    const ctx = document.getElementById('competitorChart');
+    if (!ctx) return;
+
+    let activeYear = null; // null = base
+    const infoPanel = document.getElementById('competitor-info');
+    const renderInfo = (label) => {
+      const source = activeYear === 5 ? competitorInfo.year5 : competitorInfo.base;
+      const description = source[label] || '';
+      infoPanel.innerHTML = '<h4 class="font-bold text-gray-700">' + label + '</h4><p class="text-gray-600 text-sm">' + description + '</p>';
+    };
+
+    const chart = new Chart(ctx.getContext('2d'),{
+      type:'doughnut',
+      data:{
+        labels:['Importados','DVS S.R.L.','Tecnon S.R.L.','Hermax'],
+        datasets:[{
+          data:[45,30,15,10],
+          backgroundColor: competitorColors,
+          borderColor:'#fff', borderWidth:2
+        }]
+      },
+      options:{
+        ...baseOpts,
+        plugins:{
+          ...baseOpts.plugins,
+          datalabels:{ formatter:(v)=>v+'%', font:{weight:'700', size:13}, backgroundColor:'rgba(0,0,0,0.6)', color:'#fff' }
+        },
+        onClick:(evt, els)=>{
+          if (els.length){
+            const idx = els[0].index;
+            const label = chart.data.labels[idx];
+            renderInfo(label);
+          }
+        }
+      }
+    });
+
+    // Botones Año 1..5
+    const yearButtons = Array.from(document.querySelectorAll('.year-btn'));
+    const baseLabels = ['Importados','DVS S.R.L.','Tecnon S.R.L.','Hermax'];
+    const baseData = competitorByYear[1] || [45,30,15,10];
+    const activeClasses = ['bg-blue-600','text-white','font-bold','hover:bg-blue-700'];
+    const inactiveClasses = ['bg-gray-200','text-gray-800','font-semibold','hover:bg-gray-300'];
+
+    const setButtonState = (btn, isActive) => {
+      activeClasses.forEach(c => btn.classList[isActive ? 'add' : 'remove'](c));
+      inactiveClasses.forEach(c => btn.classList[isActive ? 'remove' : 'add'](c));
+      btn.textContent = isActive ? 'Volver estado actual' : `Año ${btn.getAttribute('data-year')}`;
+    };
+
+    const setButtonActive = (btn) => setButtonState(btn, true);
+    const setButtonInactive = (btn) => setButtonState(btn, false);
+
+    yearButtons.forEach(setButtonInactive);
+
+    // Comportamiento unificado: todos los botones (1..5) actúan como toggles similares a Año 5
+    yearButtons.forEach(b=>{
+      b.addEventListener('click', ()=>{
+        const year = Number(b.getAttribute('data-year'));
+
+        if (activeYear === year){
+          activeYear = null;
+          yearButtons.forEach(setButtonInactive);
+          chart.data.labels = baseLabels;
+          chart.data.datasets[0].data = baseData;
+          chart.data.datasets[0].backgroundColor = competitorColors;
+          chart.update();
+          renderInfo(baseLabels[0]);
+          return;
+        }
+
+        activeYear = year;
+        yearButtons.forEach(setButtonInactive);
+        setButtonActive(b);
+
+        if (year === 5){
+          // Año 5: Hermax (nuestro proyecto) alcanza el 33%
+          chart.data.labels = ['Importados','DVS S.R.L.','Tecnon S.R.L.','Hermax'];
+          chart.data.datasets[0].data = competitorByYear[5];
+          chart.data.datasets[0].backgroundColor = competitorColors;
+        } else {
+          // Años 1..4: mostrar datos para las cuatro categorías principales
+          chart.data.labels = baseLabels;
+          const data = competitorByYear[year] || baseData;
+          chart.data.datasets[0].data = data;
+          chart.data.datasets[0].backgroundColor = [chartColors.red, chartColors.purple, chartColors.yellow, chartColors.gray];
+          chart.update();
+          renderInfo(chart.data.labels[0]);
+        }
+      });
+    });
+
+    renderInfo(baseLabels[0]);
+    created.competitors = chart;
+  }
+
+  function initSegments(){
+    if (created.segments) return;
+    const ctx = document.getElementById('segmentChart');
+    if (!ctx) return;
+    created.segments = new Chart(ctx.getContext('2d'),{
+      type:'bar',
+      data:{ labels:segmentData.labels, datasets:[{
+        label:'% del Mercado',
+        data:segmentData.data,
+        backgroundColor:[chartColors.blue,chartColors.lightBlue,chartColors.green]
+      }]},
+      options:{
+        ...baseOpts,
+        indexAxis:'y',
+        plugins:{
+          ...baseOpts.plugins,
+          datalabels:{ anchor:'end', align:'right', formatter:(v)=>v+'%', font:{size:13, weight:'700'}, color:'#111', backgroundColor:'rgba(255,255,255,0.85)' }
+        },
+        scales:{
+          x:{ beginAtZero:true, max:100, ticks:{ callback:(v)=>v+'%' }, grid:{ color:'#E7E5E4' } },
+          y:{ grid:{ display:false } }
+        }
+      }
+    });
+  }
+
+  function initGrowth(){
+    if (created.growth) return;
+    const ctx = document.getElementById('growthChart');
+    if (!ctx) return;
+    created.growth = new Chart(ctx.getContext('2d'),{
+      type:'bar',
+      data:{
+        labels:growthData.labels,
+        datasets:[
+          { type:'bar',  label:'Producción (M de tubos)', data:growthData.production, backgroundColor:chartColors.blue, yAxisID:'y' },
+          { type:'line', label:'Cuota de Mercado (%)',    data:growthData.marketShare, borderColor:chartColors.green, tension:.3, yAxisID:'y1' }
+        ]
+      },
+      options:{
+        ...baseOpts,
+        scales:{
+          x: baseOpts.scales.x,
+          y:  { type:'linear', position:'left',  title:{display:true, text:'Millones de tubos'} },
+          y1: { type:'linear', position:'right', title:{display:true, text:'% Mercado'}, grid:{ drawOnChartArea:false } }
+        },
+        plugins:{
+          ...baseOpts.plugins,
+          datalabels:{ formatter:(v,ctx)=> ctx.dataset.type==='line' ? v+'%' : v, font:{size:12, weight:'700'}, backgroundColor:'rgba(255,255,255,0.92)', color:'#111' }
+        }
+      }
+    });
+  }
+
+  function initMix(){
+    if (created.mix) return;
+    const ctx = document.getElementById('productionMixChart');
+    if (!ctx) return;
+    created.mix = new Chart(ctx.getContext('2d'),{
+      type:'pie',
+      data:{ labels:mixData.labels, datasets:[{ data:mixData.data, backgroundColor:[
+        chartColors.blue, chartColors.purple, chartColors.green, chartColors.yellow, chartColors.lightBlue, chartColors.gray
+      ]}]},
+      options:{
+        ...baseOpts,
+        plugins:{
+          legend:{ position:'right' },
+          datalabels:{ formatter:(v)=>v+'%', font:{size:13, weight:'700'}, backgroundColor:'rgba(0,0,0,0.6)', color:'#fff' }
+        }
+      }
+    });
+  }
+
+  function initCosts(){
+    if (created.costs) return;
+    const ctx = document.getElementById('costChart');
+    if (!ctx) return;
+    created.costs = new Chart(ctx.getContext('2d'),{
+      type:'bar',
+      data:{
+        labels:['Estructura de Costos'],
+        datasets:[
+          { label:'Costos Variables', data:[65], backgroundColor:chartColors.blue, stack:'cost' },
+          { label:'Costos Fijos',     data:[35], backgroundColor:chartColors.lightBlue, stack:'cost' }
+        ]
+      },
+      options:{
+        ...baseOpts,
+        indexAxis:'y',
+        scales:{
+          x:{ stacked:true, ticks:{ callback:(v)=>v+'%' } },
+          y:{ stacked:true, grid:{ display:false } }
+        },
+        plugins:{
+          ...baseOpts.plugins,
+          datalabels:{ formatter:(v,ctx)=> ctx.dataset.label + ': ' + v + '%', anchor:'center', color:'#fff', font:{size:12, weight:'700'}, backgroundColor:'rgba(0,0,0,0.6)' }
+        }
+      }
+    });
+  }
+
+  // Observa cada canvas y crea el gráfico cuando aparece
+  const charts = [
+    ['demandChart', initDemand],
+    ['competitorChart', initCompetitors],
+    ['segmentChart', initSegments],
+    ['growthChart', initGrowth],
+    ['productionMixChart', initMix],
+    ['costChart', initCosts]
+  ];
+
+  const co = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        const id = e.target.id;
+        const item = charts.find(c => c[0]===id);
+        if (item) item[1]();
+      }
+    });
+  }, { rootMargin:'-10% 0px -10% 0px', threshold:.2 });
+
+  charts.forEach(([id])=>{
+    const el = document.getElementById(id);
+    if (el) co.observe(el);
+  });
+  </script>
+
+  <footer class="bg-white border-t mt-10">
+    <div class="container mx-auto px-6 py-4 text-center text-gray-500">
+      <p>&copy; 2025 - Proyecto Final: Alvarez, Colillán, Echeverría, Sarena.</p>
+    </div>
+  </footer>
+</body>
+</html>
