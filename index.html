@@ -1,146 +1,368 @@
-<!DOCTYPE html>
-
+﻿<!DOCTYPE html>
 <html lang="es" class="scroll-smooth">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Proyecto: Planta de Tubos Recolectores de Sangre</title>
 
-  <!-- Tailwind (CDN) -->
+  <!-- UI / Charts -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- Chart.js + DataLabels (para porcentajes) -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  <!-- Fuente -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 
-  <!-- Fuente del sistema (rápida y legible en proyector) -->
   <style>
-    :root{
-      --bg:#F5F5F4; --text:#1f2937; --muted:#6B7280; --card:#FFFFFF; --primary:#2563EB;
-      --spotlight-dim: .25;
-    }
-    body{ background:var(--bg); color:var(--text); }
-    /* Spotlight: atenúa todo salvo la sección activa */
-    body.spotlight main section{ opacity: var(--spotlight-dim); transition: opacity .2s; }
-    body.spotlight main section.active{ opacity: 1; }
-    /* Alto contraste para proyectores complejos */
-    body.contrast { background:#0b0f1a; color:#e6eaf2; }
-    body.contrast header, body.contrast .bg-white{ background:#111827 !important; }
-    body.contrast .text-gray-600{ color:#cbd5e1 !important; }
-
-    /* Barra de progreso superior */
-    #page-progress{ position:fixed; left:0; top:0; height:4px; width:0; z-index:60;
-      background:linear-gradient(90deg,#2563EB,#22c55e);
+    :root {
+      --bg: #F5F5F4;  /* warm-neutral-100 */
+      --fg: #292524;  /* warm-neutral-800 */
+      --card: #FFFFFF;
+      --muted: #6B7280;
+      --ring: rgba(59,130,246,.3);
+      --primary: #3B82F6; /* blue-500 */
+      --primary-200: #BFDBFE;
+      --primary-300: #93C5FD;
+      --green: #10B981;
+      --yellow: #F59E0B;
+      --red: #EF4444;
+      --purple: #8B5CF6;
+      --gray: #6B7280;
     }
 
-    /* Impresión / PDF sin controles */
-    @media print{ header, .presenter-controls, #page-progress{ display:none } }
-  </style>
-  <style>
-    /* Resaltado suave para la sección activa y transición */
-    main section{ transition: box-shadow .25s ease, transform .18s ease, opacity .2s; }
-    main section.active{ box-shadow: 0 10px 30px rgba(15,23,42,0.08); transform: translateY(-4px); }
-    /* Asegurar espacio superior cuando se usa scroll con offset */
-    :root{ --scroll-margin: 18px; --small-text: 14px; }
-    /* Mejor legibilidad para textos pequeños en pantallas y proyectores */
-    .text-sm{ font-size: var(--small-text) !important; }
-    /* Scroll-snap para modo presentación: cada sección encaja en pantalla */
-    main.present-snap{ scroll-snap-type: y mandatory; }
-    main.present-snap > section{ scroll-snap-align: start; min-height: calc(100vh - 72px); }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+    }
+
+    /* Tarjetas y secciones */
+    section {
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+    .presentation-mode section {
+      opacity: 0;
+      transform: translateY(20px);
+      pointer-events: none;
+    }
+
+    .presentation-mode section.presentation-active {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: all;
+    }
+
+    .section-card {
+      background: var(--card);
+      border-radius: .85rem;
+      padding: 2rem;
+      box-shadow: 0 10px 20px -10px rgb(0 0 0 / .25);
+      border: 2px solid transparent;
+      transition: border-color 0.3s ease,
+                  box-shadow 0.3s ease,
+                  opacity 0.5s ease,
+                  transform 0.5s ease;
+    }
+
+    .presentation-mode .section-card {
+      opacity: 0;
+      transform: translateY(10px);
+      transition-delay: 0.2s;
+    }
+
+    .presentation-mode .presentation-active .section-card {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .section-card.highlight {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 6px var(--ring);
+    }
+    .kpi-card{
+      background: var(--card);
+      border-radius: .85rem;
+      padding: 1.25rem;
+      box-shadow: 0 8px 18px -12px rgb(0 0 0 / .35);
+      transition: transform .18s ease;
+    }
+    .kpi-card:hover{ transform: translateY(-4px); }
+
+    /* Contenedor de charts con altura fija adaptativa */
+    .chart-container{
+      position: relative;
+      width: 100%;
+      max-width: 760px;
+      margin-inline: auto;
+      height: 360px;
+    }
+    @media (min-width: 1024px){
+      .chart-container{ height: 420px; }
+    }
+
+    .chart-toolbar{
+      display:flex;
+      flex-wrap:wrap;
+      gap:.5rem;
+      margin-top:1rem;
+      justify-content:center;
+    }
+    .chart-toggle{
+      padding:.45rem .95rem;
+      border-radius:.75rem;
+      border:1px solid var(--primary-200);
+      background: rgba(59,130,246,0.08);
+      color: var(--primary);
+      font-weight:600;
+      font-size:.9rem;
+      transition: all .2s ease;
+    }
+    .chart-toggle:hover{ background: rgba(59,130,246,0.15); }
+    .chart-toggle.is-active{
+      background: var(--primary);
+      color:#fff;
+      border-color: var(--primary);
+      box-shadow: 0 10px 20px -12px rgba(59,130,246,.45);
+    }
+    .chart-detail{
+      margin-top:.75rem;
+      text-align:center;
+      color: var(--gray);
+      font-size:.95rem;
+    }
+    /* Flujo del proceso (sección Operaciones) */
+    .process-flow{ position: relative; display:flex; justify-content:space-between; gap:.5rem; padding-top:2rem }
+    .flow-line{ border-top:3px solid var(--primary-200); position:absolute; width:90%; top:4.5rem; left:5%; z-index:10 }
+    .process-step{ position:relative; z-index:20; width:20%; text-align:center; padding-inline:.5rem }
+    .step-icon{
+      background: var(--primary); color:white; width:5.5rem; height:5.5rem; border-radius:9999px;
+      display:flex; align-items:center; justify-content:center; font-size:1.9rem;
+      box-shadow: 0 10px 30px rgba(59,130,246,.35); margin: 0 auto .75rem;
+    }
+
+        .present-toggle{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:.4rem;
+      background: var(--primary);
+      color:#fff;
+      font-weight:600;
+      border-radius:.75rem;
+      padding:.6rem 1rem;
+      box-shadow: 0 12px 24px -14px rgba(59,130,246,.6);
+      transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+    }
+    .present-toggle:hover{ transform: translateY(-2px); box-shadow: 0 16px 30px -14px rgba(59,130,246,.7); }
+    .present-toggle:focus{ outline: 4px solid var(--ring); }
+    body.presentation-mode .present-toggle{ background: var(--purple); }
+    body.presentation-mode .present-toggle:hover{ box-shadow: 0 16px 30px -14px rgba(139,92,246,.65); }
+
+    body.presentation-mode{
+      scroll-behavior: smooth;
+    }
+    body.presentation-mode main > section{
+      display:none;
+    }
+    body.presentation-mode main > section.presentation-active{
+      display:block;
+      animation: fadeSlideIn .55s ease both;
+    }
+    @keyframes fadeSlideIn{
+      from{ opacity:0; transform: translateY(42px); }
+      to{ opacity:1; transform: translateY(0); }
+    }
+/* Botón flotante siguiente (presentación) */
+    .next-btn{
+      position: fixed; right: 1rem; bottom: 1rem;
+      background: var(--primary);
+      color: white;
+      border-radius: .75rem;
+      padding: .75rem 1rem;
+      font-weight: 700;
+      box-shadow: 0 12px 24px -12px rgba(59,130,246,.6);
+    }
+    .next-btn:focus { outline: 4px solid var(--ring); }
   </style>
 </head>
-
 <body class="antialiased">
-  <!-- Progreso -->
-  <div id="page-progress"></div>
 
-  <!-- Header -->
-  <header class="bg-white/90 backdrop-blur-md sticky top-0 z-50 shadow-sm">
-    <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
-      <div class="text-xl md:text-2xl font-extrabold text-gray-900 flex items-center gap-3">
-        <span>Proyecto Tubos Recolectores</span>
+  <!-- Header / Nav -->
+  <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+    <nav class="container mx-auto px-6 py-4 flex flex-wrap items-center gap-4 justify-between">
+      <div class="text-xl font-extrabold text-gray-900">
+        Proyecto Tubos Recolectores
       </div>
-      <div id="topnav" class="hidden md:flex gap-8 font-semibold">
-        <a href="#introduccion" class="text-gray-600 hover:text-blue-600">Inicio</a>
-        <a href="#oportunidad" class="text-gray-600 hover:text-blue-600">Oportunidad</a>
-        <a href="#plan" class="text-gray-600 hover:text-blue-600">Plan de Negocio</a>
-        <a href="#operaciones" class="text-gray-600 hover:text-blue-600">Operaciones</a>
-  <a href="#estrategia" class="text-gray-600 hover:text-blue-600">Estrategia</a>
+      <div class="flex items-center gap-4 ml-auto flex-wrap justify-end">
+        <div class="hidden md:flex space-x-8" id="main-nav">
+          <a href="#objetivos"   class="text-gray-600 nav-link font-medium hover:text-blue-600">Objetivos</a>
+          <a href="#producto"    class="text-gray-600 nav-link font-medium hover:text-blue-600">Producto</a>
+          <a href="#oportunidad" class="text-gray-600 nav-link font-medium hover:text-blue-600">Oportunidad</a>
+          <a href="#plan"        class="text-gray-600 nav-link font-medium hover:text-blue-600">Plan de Negocio</a>
+          <a href="#operaciones" class="text-gray-600 nav-link font-medium hover:text-blue-600">Operaciones</a>
+          <a href="#estrategia"  class="text-gray-600 nav-link font-medium hover:text-blue-600">Estrategia</a>
+        </div>
+        <button id="presentToggleBtn" type="button" class="present-toggle">
+          Modo presentación
+        </button>
       </div>
     </nav>
   </header>
 
-  <main class="container mx-auto px-6 md:px-8 py-8 md:py-12 space-y-24">
+  <main class="container mx-auto px-6 py-10 md:py-14 space-y-20">
 
-    <!-- INTRO -->
-    <section id="introduccion" class="space-y-6 md:space-y-8">
-      <h1 class="text-4xl md:text-6xl font-extrabold text-gray-900 leading-tight text-center">
+    <!-- HERO -->
+    <section id="introduccion" class="text-center">
+      <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
         Instalación de Planta Productora de Tubos Recolectores de Sangre
       </h1>
-      <p class="text-lg md:text-xl text-gray-600 text-center max-w-3xl mx-auto">
-        Un proyecto estratégico para la sustitución de importaciones y el fortalecimiento
-        de la soberanía sanitaria en Argentina.
+      <p class="text-lg md:text-xl text-gray-600 max-w-4xl mx-auto mb-10">
+        Un proyecto estratégico para la sustitución de importaciones y el fortalecimiento de la soberanía sanitaria en Argentina.
       </p>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-        <div class="bg-white rounded-xl p-6 shadow hover:shadow-lg transition text-center">
-          <div class="text-4xl font-extrabold text-blue-600">90 M</div>
-          <p class="text-gray-500 mt-2">Demanda Anual Estimada</p>
+        <div class="kpi-card text-center">
+          <p class="text-4xl md:text-5xl font-extrabold text-blue-600">90 M</p>
+          <p class="text-gray-500 mt-2 font-medium">Demanda Anual Estimada</p>
         </div>
-        <div class="bg-white rounded-xl p-6 shadow hover:shadow-lg transition text-center">
-          <div class="text-4xl font-extrabold text-blue-600">15%</div>
-          <p class="text-gray-500 mt-2">Cuota de Mercado (Año 1)</p>
+        <div class="kpi-card text-center">
+          <p class="text-4xl md:text-5xl font-extrabold text-blue-600">15%</p>
+          <p class="text-gray-500 mt-2 font-medium">Cuota de Mercado (Año 1)</p>
         </div>
-        <div class="bg-white rounded-xl p-6 shadow hover:shadow-lg transition text-center">
-          <div class="text-4xl font-extrabold text-blue-600">33%</div>
-          <p class="text-gray-500 mt-2">Cuota de Mercado (Año 5)</p>
+        <div class="kpi-card text-center">
+          <p class="text-4xl md:text-5xl font-extrabold text-blue-600">33%</p>
+          <p class="text-gray-500 mt-2 font-medium">Cuota de Mercado (Año 5)</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- NUEVO BLOQUE: OBJETIVOS -->
+    <section id="objetivos" class="space-y-8">
+      <div class="text-center">
+        <h2 class="text-3xl font-extrabold text-gray-900">Objetivos del Proyecto</h2>
+        <p class="mt-2 text-lg text-gray-600 max-w-3xl mx-auto">
+          Metas claras para asegurar impacto sanitario, eficiencia operativa y competitividad.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="section-card">
+          <h3 class="font-bold text-xl mb-2">Objetivo General</h3>
+          <p class="text-gray-700">
+            Instalar una planta destinada a fabricar tubos recolectores de sangre descartables de polipropileno por inyección para sustituir importaciones y abastecer el mercado nacional.
+          </p>
+        </div>
+
+        <div class="section-card">
+          <h3 class="font-bold text-xl mb-2">Objetivos Específicos (Año 1)</h3>
+          <ul class="list-disc list-inside text-gray-700 space-y-2">
+            <li>Abastecer el <strong>15%</strong> del mercado: <strong>13,5 millones</strong> de tubos.</li>
+            <li>Producir la <strong>línea completa</strong> de 13×75 mm (suero, plasma y sangre total).</li>
+            <li>Reducir <strong>lead time</strong> y mejorar disponibilidad local.</li>
+          </ul>
+        </div>
+
+        <div class="section-card">
+          <h3 class="font-bold text-xl mb-2">Escalamiento (5 años)</h3>
+          <p class="text-gray-700">
+            Alcanzar el <strong>33%</strong> del mercado: <strong>30 millones</strong> de tubos anuales, con certificaciones, proceso automatizado y costos competitivos.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- NUEVO BLOQUE: PRODUCTO -->
+    <section id="producto" class="space-y-8">
+      <div class="text-center">
+        <h2 class="text-3xl font-extrabold text-gray-900">¿Qué Producimos?</h2>
+        <p class="mt-2 text-lg text-gray-600 max-w-3xl mx-auto">
+          Línea completa de tubos 13×75 mm y accesorios para cubrir suero, plasma y sangre total.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        <div class="section-card">
+          <h3 class="font-bold text-xl mb-3">Familias de Producto</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h4 class="font-semibold text-blue-700 mb-1">Tubos para Suero</h4>
+              <ul class="list-disc list-inside text-gray-700 space-y-1">
+                <li>Gel + Activador de coagulaci&oacute;n</li>
+                <li>Perlas + Activador de coagulaci&oacute;n</li>
+                <li>Sin aditivo</li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="font-semibold text-blue-700 mb-1">Tubos para Plasma</h4>
+              <ul class="list-disc list-inside text-gray-700 space-y-1">
+                <li>Citrato de sodio 3.2%</li>
+                <li>Citrato de sodio 3.8%</li>
+                <li>Heparina de litio</li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="font-semibold text-blue-700 mb-1">Sangre Total</h4>
+              <ul class="list-disc list-inside text-gray-700 space-y-1">
+                <li>EDTA K3</li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="font-semibold text-blue-700 mb-1">Accesorios</h4>
+              <ul class="list-disc list-inside text-gray-700 space-y-1">
+                <li>Tapas (TPE), etiquetas, sales y agua</li>
+                <li>Gradillas y cajas de transporte</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <h3 class="font-bold text-xl mb-3">Mix de Producci&oacute;n Inicial (A&ntilde;o 1)</h3>
+          <p class="text-gray-600 mb-4">Distribuci&oacute;n prevista de fabricaci&oacute;n para una r&aacute;pida penetraci&oacute;n de mercado.</p>
+          <div class="chart-container h-[380px]">
+            <canvas id="productionMixChart"></canvas>
+          </div>
         </div>
       </div>
     </section>
 
     <!-- OPORTUNIDAD -->
     <section id="oportunidad" class="space-y-10">
-      <div class="text-center space-y-2">
-        <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900">Análisis de la Oportunidad de Mercado</h2>
-        <p class="text-lg text-gray-600 max-w-2xl mx-auto">
-          Mercado con demanda estable y alta dependencia de importaciones: oportunidad clara para producción local.
+      <div class="text-center">
+        <h2 class="text-3xl font-extrabold text-gray-900">An&aacute;lisis de la Oportunidad de Mercado</h2>
+        <p class="mt-2 text-lg text-gray-600 max-w-3xl mx-auto">
+          Demanda sostenida y alta dependencia de importaciones: escenario ideal para producci&oacute;n nacional.
         </p>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
-        <!-- Demanda -->
-        <div class="bg-white rounded-xl p-6 shadow">
-          <h3 class="font-bold text-xl text-center mb-2">Evolución y Proyección de la Demanda</h3>
-          <p class="text-center text-gray-500 mb-4">Crecimiento sostenido (+15% acumulado a 5 años).</p>
-          <div class="relative mx-auto max-w-xl h-[340px] md:h-[420px]">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        <div class="section-card">
+          <h3 class="font-bold text-2xl text-gray-800 mb-4 text-center">Evoluci&oacute;n y Proyecci&oacute;n de la Demanda</h3>
+          <p class="text-center text-gray-600 mb-4">Crecimiento acumulado estimado del 15% en 5 a&ntilde;os.</p>
+          <div class="chart-container">
             <canvas id="demandChart"></canvas>
           </div>
+          <div class="chart-toolbar" id="demandYearControls"></div>
+          <div class="chart-detail" id="demandYearDetail">Seleccion&aacute; un a&ntilde;o para ver la demanda proyectada.</div>
         </div>
 
-        <!-- Competencia -->
-        <div class="bg-white rounded-xl p-6 shadow">
-          <div class="flex items-center justify-between mb-2">
-            <h3 class="font-bold text-xl text-center w-full">Panorama Competitivo</h3>
-          </div>
-          <p class="text-center text-gray-500 mb-4">Hacé clic en la leyenda o usá el botón para simular el Año 5.</p>
+        <div class="section-card">
+          <h3 class="font-bold text-2xl text-gray-800 mb-4 text-center">Panorama Competitivo Actual</h3>
+          <p class="text-center text-gray-600 mb-4">Hac&eacute; clic en el gr&aacute;fico para ver detalles por jugador.</p>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-            <div class="relative h-[280px] md:h-[380px]">
+            <div class="chart-container h-64 md:h-auto">
               <canvas id="competitorChart"></canvas>
             </div>
-            <div class="space-y-3">
-              <div id="competitor-info" class="bg-gray-50 rounded-lg p-4 text-sm leading-6">
-                <h4 class="font-bold text-gray-700">Importados</h4>
-                <p class="text-gray-600">
-                  Precios bajos pero con alta vulnerabilidad al tipo de cambio, costos logísticos elevados y servicio postventa deficiente.
-                </p>
-              </div>
-              <div class="flex gap-2 flex-wrap">
-                <button data-year="1" id="btnY1" class="year-btn w-full md:w-auto px-3 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold hover:bg-gray-300">Año 1</button>
-                <button data-year="2" id="btnY2" class="year-btn w-full md:w-auto px-3 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold hover:bg-gray-300">Año 2</button>
-                <button data-year="3" id="btnY3" class="year-btn w-full md:w-auto px-3 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold hover:bg-gray-300">Año 3</button>
-                <button data-year="4" id="btnY4" class="year-btn w-full md:w-auto px-3 py-2 rounded-lg bg-gray-200 text-gray-800 font-semibold hover:bg-gray-300">Año 4</button>
-                <button data-year="5" id="btnY5" class="year-btn w-full md:w-auto px-3 py-2 rounded-lg bg-blue-600 text-white font-bold hover:bg-blue-700">Año 5</button>
-              </div>
+            <div id="competitor-info" class="p-4 bg-gray-50 rounded-lg min-h-[150px] shadow-inner">
+              <h4 class="font-bold text-lg text-gray-700">Importados</h4>
+              <p class="text-gray-600 text-sm">
+                Precios bajos pero con alta vulnerabilidad al tipo de cambio, costos log&iacute;sticos elevados y servicio postventa limitado.
+              </p>
             </div>
           </div>
         </div>
@@ -149,99 +371,99 @@
 
     <!-- PLAN -->
     <section id="plan" class="space-y-10">
-      <div class="text-center space-y-2">
-        <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900">Nuestro Plan de Negocio</h2>
-        <p class="text-lg text-gray-600 max-w-2xl mx-auto">Producción escalable con foco en segmentos clave.</p>
+      <div class="text-center">
+        <h2 class="text-3xl font-extrabold text-gray-900">Nuestro Plan de Negocio</h2>
+        <p class="mt-2 text-lg text-gray-600 max-w-3xl mx-auto">
+          Producci&oacute;n escalable y enfoque por segmentos.
+        </p>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
-        <div class="bg-white rounded-xl p-6 shadow lg:col-span-2">
-          <h3 class="font-bold text-xl text-center mb-2">Segmentos de Mercado Objetivo</h3>
-          <p class="text-center text-gray-500 mb-4">Enfocados en tres segmentos principales.</p>
-          <div class="relative h-[320px]">
+      <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+        <div class="section-card lg:col-span-2">
+          <h3 class="font-bold text-2xl text-gray-800 mb-3 text-center">Segmentos de Mercado Objetivo</h3>
+          <p class="text-center text-gray-600 mb-4">Hospitales p&uacute;blicos, privados/laboratorios y veterinarias.</p>
+          <div class="chart-container h-[360px]">
             <canvas id="segmentChart"></canvas>
           </div>
         </div>
-
-        <div class="bg-white rounded-xl p-6 shadow lg:col-span-3">
-          <h3 class="font-bold text-xl text-center mb-2">Proyección de Crecimiento a 5 Años</h3>
-          <p class="text-center text-gray-500 mb-4">Meta de 30M de tubos/año y 33% de cuota.</p>
-          <div class="relative h-[360px]">
+        <div class="section-card lg:col-span-3">
+          <h3 class="font-bold text-2xl text-gray-800 mb-3 text-center">Proyecci&oacute;n de Crecimiento a 5 A&ntilde;os</h3>
+          <p class="text-center text-gray-600 mb-4">Meta de 30 millones de unidades y 33% de share en el quinto a&ntilde;o.</p>
+          <div class="chart-container">
             <canvas id="growthChart"></canvas>
           </div>
-        </div>
-      </div>
-
-      <div class="bg-white rounded-xl p-6 shadow">
-        <h3 class="font-bold text-xl text-center mb-2">Mix de Producción Inicial (Año 1)</h3>
-        <p class="text-center text-gray-500 mb-4">Prioriza los tipos de mayor demanda para penetración rápida.</p>
-        <div class="relative mx-auto max-w-xl h-[320px]">
-          <canvas id="productionMixChart"></canvas>
+          <div class="chart-toolbar" id="growthYearControls"></div>
+          <div class="chart-detail" id="growthYearDetail">Seleccion&aacute; un a&ntilde;o para ver producci&oacute;n proyectada y cuota de mercado.</div>
         </div>
       </div>
     </section>
 
     <!-- OPERACIONES -->
     <section id="operaciones" class="space-y-10">
-      <div class="text-center space-y-2">
-        <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900">Viabilidad Operativa</h2>
-        <p class="text-lg text-gray-600 max-w-2xl mx-auto">Proceso eficiente y cadena de suministro con anclaje nacional.</p>
+      <div class="text-center">
+        <h2 class="text-3xl font-extrabold text-gray-900">Viabilidad Operativa</h2>
+        <p class="mt-2 text-lg text-gray-600 max-w-3xl mx-auto">
+          Proceso eficiente y cadena de suministro local.
+        </p>
       </div>
 
-      <div class="bg-white rounded-xl p-6 shadow">
-        <h3 class="font-bold text-xl text-center mb-6">Proceso Productivo Optimizado</h3>
-        <div class="relative flex justify-between items-start text-center pt-6">
-          <div class="absolute left-[5%] top-[56px] w-[90%] border-t-4 border-blue-200"></div>
-          <div class="relative z-10 w-1/5 px-2">
-            <div class="bg-blue-600 text-white w-20 h-20 rounded-full grid place-items-center mx-auto mb-3 text-2xl shadow">🏭</div>
-            <p class="font-bold text-gray-800">Inyección</p>
-            <p class="text-xs text-gray-500">Moldeo de tubos (PP) y tapas (TPE/PE).</p>
+      <div class="section-card">
+        <h3 class="font-semibold text-xl text-gray-800 mb-6 text-center">Proceso Productivo (5 pasos)</h3>
+        <div class="process-flow">
+          <div class="flow-line"></div>
+          <div class="process-step">
+            <div class="step-icon">🏭</div>
+            <h4 class="font-bold">Inyección</h4>
+            <p class="text-sm text-gray-600">Tubos (PP) y tapas (TPE).</p>
           </div>
-          <div class="relative z-10 w-1/5 px-2">
-            <div class="bg-blue-600 text-white w-20 h-20 rounded-full grid place-items-center mx-auto mb-3 text-2xl shadow">🔬</div>
-            <p class="font-bold text-gray-800">Ensamblado</p>
-            <p class="text-xs text-gray-500">Dosificado y sellado en Área Limpia (HEPA).</p>
+          <div class="process-step">
+            <div class="step-icon">🔬</div>
+            <h4 class="font-bold">Ensamblado</h4>
+            <p class="text-sm text-gray-600">Dosificado y sellado en Área Limpia.</p>
           </div>
-          <div class="relative z-10 w-1/5 px-2">
-            <div class="bg-blue-600 text-white w-20 h-20 rounded-full grid place-items-center mx-auto mb-3 text-2xl shadow">🏷️</div>
-            <p class="font-bold text-gray-800">Etiquetado</p>
-            <p class="text-xs text-gray-500">Lote y vencimiento.</p>
+          <div class="process-step">
+            <div class="step-icon">🏷️</div>
+            <h4 class="font-bold">Etiquetado</h4>
+            <p class="text-sm text-gray-600">Lote y vencimiento.</p>
           </div>
-          <div class="relative z-10 w-1/5 px-2">
-            <div class="bg-blue-600 text-white w-20 h-20 rounded-full grid place-items-center mx-auto mb-3 text-2xl shadow">✅</div>
-            <p class="font-bold text-gray-800">Validación y Esterilización</p>
-            <p class="text-xs text-gray-500">Control final y esterilización (ANMAT).</p>
+          <div class="process-step">
+            <div class="step-icon">✅</div>
+            <h4 class="font-bold">Validación/Esterilización</h4>
+            <p class="text-sm text-gray-600">QC + esterilización.</p>
           </div>
-          <div class="relative z-10 w-1/5 px-2">
-            <div class="bg-blue-600 text-white w-20 h-20 rounded-full grid place-items-center mx-auto mb-3 text-2xl shadow">📦</div>
-            <p class="font-bold text-gray-800">Empaquetado</p>
-            <p class="text-xs text-gray-500">Gradillas y cajas para distribución.</p>
+          <div class="process-step">
+            <div class="step-icon">📦</div>
+            <h4 class="font-bold">Empaquetado</h4>
+            <p class="text-sm text-gray-600">Gradillas y cajas.</p>
           </div>
         </div>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div class="bg-white rounded-xl p-6 shadow">
-          <h3 class="font-bold text-xl mb-3">Cadena de Suministro Nacional</h3>
-          <ul class="space-y-3 text-gray-700">
-            <li><b>Polipropileno (PP):</b> Petrocuyo y Braskem.</li>
-            <li><b>Elastómeros (Tapas):</b> Kariprene y Laprene.</li>
-            <li><b>Aditivos Químicos:</b> Distribuidores nacionales (p.ej. Syntex).</li>
+        <div class="section-card">
+          <h3 class="font-semibold text-xl mb-3">Cadena de Suministro Nacional</h3>
+          <ul class="space-y-2 text-gray-700">
+            <li><span class="font-semibold">PP:</span> Petrocuyo/Braskem.</li>
+            <li><span class="font-semibold">Tapas (TPE):</span> proveedores locales.</li>
+            <li><span class="font-semibold">Aditivos:</span> distribuidores nacionales.</li>
           </ul>
         </div>
-        <div class="bg-white rounded-xl p-6 shadow">
-          <h3 class="font-bold text-xl mb-3">Métricas de Eficiencia</h3>
-          <div class="flex justify-between items-baseline">
-            <span class="text-gray-700">Takt Time (Ritmo de Demanda):</span>
-            <span class="font-extrabold text-2xl text-blue-600">2.0s</span>
-          </div>
-          <div class="flex justify-between items-baseline">
-            <span class="text-gray-700">Tiempo de Ciclo (Monoblock):</span>
-            <span class="font-extrabold text-2xl text-green-600">1.8s</span>
-          </div>
-          <div class="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 p-4 rounded mt-4">
-            <p class="font-bold">Cuello de Botella</p>
-            <p>Empaquetado final (2.2s/tubo). Sugerido: automatizar para sostener 30M/año.</p>
+
+        <div class="section-card">
+          <h3 class="font-semibold text-xl mb-3">Métricas de Eficiencia</h3>
+          <div class="space-y-3">
+            <div class="flex justify-between items-baseline">
+              <span class="font-medium">Takt Time:</span>
+              <span class="font-bold text-2xl text-blue-600">2.0s</span>
+            </div>
+            <div class="flex justify-between items-baseline">
+              <span class="font-medium">Tiempo de Ciclo (Monoblock):</span>
+              <span class="font-bold text-2xl text-green-600">1.8s</span>
+            </div>
+            <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md">
+              <p class="font-bold">Cuello de botella</p>
+              <p>Empaquetado final (2.2s/tubo). Plan: automatizar para alcanzar 30M/año.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -249,470 +471,552 @@
 
     <!-- ESTRATEGIA -->
     <section id="estrategia" class="space-y-10">
-      <div class="text-center space-y-2">
-        <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900">Análisis Estratégico y Financiero</h2>
-        <p class="text-lg text-gray-600 max-w-2xl mx-auto">Estructura de costos competitiva con CVU bajo por automatización.</p>
+      <div class="text-center">
+        <h2 class="text-3xl font-extrabold text-gray-900">Análisis Estratégico y Financiero</h2>
+        <p class="mt-2 text-lg text-gray-600 max-w-3xl mx-auto">Costos, BEP y FODA simplificado para decisión.</p>
       </div>
 
-      <div class="bg-white rounded-xl p-6 shadow">
-        <h3 class="font-bold text-xl text-center mb-4">Estructura de Costos y Punto de Equilibrio</h3>
+      <div class="section-card">
+        <h3 class="font-semibold text-xl mb-4 text-center">Estructura de Costos y Punto de Equilibrio</h3>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-          <div class="space-y-3">
-            <ul class="text-gray-700 space-y-2">
-              <li><b>Costos Variables:</b> PP, TPE, aditivos, packaging.</li>
-              <li><b>Costos Fijos:</b> Salarios (admin, QC, mant.), amortización e infraestructura.</li>
+          <div>
+            <p class="text-gray-700 mb-4">
+              Alta automatización ⇒ <strong>CVU</strong> bajo. Clave para licitaciones públicas y márgenes.
+            </p>
+            <ul class="space-y-2 mb-6 text-gray-700">
+              <li><strong>Variables:</strong> PP/TPE, aditivos, packaging.</li>
+              <li><strong>Fijos:</strong> salarios, amortización, infraestructura.</li>
             </ul>
             <div class="bg-gray-100 p-4 rounded-lg">
-              <h4 class="font-semibold text-gray-800">Punto de Equilibrio (BEP)</h4>
-              <p class="text-gray-600 text-sm mt-1">Volumen necesario para cubrir todos los costos:</p>
-              <p class="text-center font-mono bg-white p-2 rounded mt-2 text-sm md:text-base">
-                BEP (unidades) = CF / (P - CVU)
-              </p>
+              <h4 class="font-semibold">Punto de Equilibrio (BEP)</h4>
+              <p class="text-sm mt-1">Fórmula:</p>
+              <p class="text-center font-mono bg-white p-2 rounded text-base">BEP (unidades) = CF / (P − CVU)</p>
             </div>
           </div>
-          <div class="relative h-[280px]">
+          <div class="chart-container h-[320px]">
             <canvas id="costChart"></canvas>
           </div>
         </div>
       </div>
     </section>
 
-    
   </main>
 
-  <!-- Controles del presentador -->
-  <div class="presenter-controls fixed right-4 bottom-4 z-50 flex gap-2 flex-wrap">
-    <button id="btn-present" class="px-3 py-2 rounded-lg font-bold text-white bg-blue-600 shadow hover:bg-blue-700">Presentar</button>
-    <button id="btn-prev" class="px-3 py-2 rounded-lg font-bold bg-white border shadow">←</button>
-    <button id="btn-next" class="px-3 py-2 rounded-lg font-bold bg-white border shadow">→</button>
-    <button id="btn-zoom-in" class="px-3 py-2 rounded-lg font-bold bg-white border shadow">A+</button>
-    <button id="btn-zoom-out" class="px-3 py-2 rounded-lg font-bold bg-white border shadow">A-</button>
-    <button id="btn-contrast" class="px-3 py-2 rounded-lg font-bold bg-white border shadow">Alto contraste</button>
-  </div>
+  <!-- Botón flotante de avance -->
+  <button id="nextBtn" type="button" class="next-btn" title="Ir a la siguiente sección">Siguiente sección</button>
 
-  <!-- Lógica de presentación + Charts -->
+  <footer class="bg-white border-t border-gray-200 mt-16">
+    <div class="container mx-auto px-6 py-6 text-center text-gray-500 text-sm">
+      © 2025 - Proyecto Final: Alvarez, Colillán, Echeverría, Sarena.
+    </div>
+  </footer>
+
   <script>
-  // ================== PRESENTACIÓN & NAVEGACIÓN ==================
-  (function(){
-    const sections = Array.from(document.querySelectorAll('main section'));
-    const links = Array.from(document.querySelectorAll('#topnav a'));
-    const progress = document.getElementById('page-progress');
-
-    let idx = 0, presenting = false, zoom = 1;
-
-    const SCROLL_MARGIN = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--scroll-margin')) || 18;
-    function setActive(i, smooth=true){
-      idx = Math.max(0, Math.min(i, sections.length-1));
-      const target = sections[idx];
-      sections.forEach(s => s.classList.remove('active'));
-      target.classList.add('active');
-
-      // Scroll ajustado teniendo en cuenta el header sticky para evitar que el título quede tapado
-      if (smooth){
-        const header = document.querySelector('header');
-        const headerHeight = header ? header.getBoundingClientRect().height : 0;
-        const targetRect = target.getBoundingClientRect();
-        const scrollTop = window.scrollY || window.pageYOffset;
-        const targetTop = scrollTop + targetRect.top - headerHeight - SCROLL_MARGIN; // margen extra configurable
-        window.scrollTo({ top: targetTop, behavior: 'smooth' });
-      }
-
-      // nav activo
-      const id = '#'+target.id;
-      links.forEach(a => a.classList.toggle('text-blue-600', a.getAttribute('href')===id));
-      // progreso
-      progress.style.width = ((idx+1)/sections.length*100)+'%';
-      // hash (sin generar salto instantáneo)
-      history.replaceState(null,'',id);
-    }
-
-    function togglePresent(){
-      presenting = !presenting;
-      const mainEl = document.querySelector('main');
-      document.body.classList.toggle('spotlight', presenting);
-      const btn = document.getElementById('btn-present');
-      btn.textContent = presenting ? 'Salir' : 'Presentar';
-      if (presenting){
-        // Activar scroll-snap y bloquear scroll del body para que cada sección ocupe la pantalla
-        if (mainEl) mainEl.classList.add('present-snap');
-        document.body.style.overflow = 'hidden';
-        // Posicionar en la primera sección con animación
-        setActive(0, true);
-      }else{
-        if (mainEl) mainEl.classList.remove('present-snap');
-        document.body.style.overflow = '';
-        // Al salir, mantener la sección actual sin animación
-        setActive(idx, false);
-      }
-    }
-
-    function setZoom(delta){
-      zoom = Math.max(0.85, Math.min(1.35, zoom + delta));
-      document.documentElement.style.fontSize = (zoom*100)+'%';
-    }
-
-    // Botones
-    document.getElementById('btn-present').onclick = togglePresent;
-    document.getElementById('btn-prev').onclick = ()=>setActive(idx-1);
-    document.getElementById('btn-next').onclick = ()=>setActive(idx+1);
-    document.getElementById('btn-zoom-in').onclick = ()=>setZoom(0.05);
-    document.getElementById('btn-zoom-out').onclick = ()=>setZoom(-0.05);
-    document.getElementById('btn-contrast').onclick = ()=>document.body.classList.toggle('contrast');
-
-    // Teclado
-    window.addEventListener('keydown', (e)=>{
-      if (e.key==='ArrowRight') setActive(idx+1);
-      if (e.key==='ArrowLeft') setActive(idx-1);
-      if (e.key==='p' || e.key==='P') togglePresent();
-      if (e.key==='+') setZoom(0.05);
-      if (e.key==='-') setZoom(-0.05);
-      if (e.key==='h' || e.key==='H') document.body.classList.toggle('contrast');
-    });
-
-    // Scrollspy con IntersectionObserver (marca sección activa y dispara charts)
-    const io = new IntersectionObserver((entries)=>{
-      const visible = entries.filter(e=>e.isIntersecting).sort((a,b)=>b.intersectionRatio-a.intersectionRatio);
-      if (visible[0]) {
-        const i = sections.indexOf(visible[0].target);
-        setActive(i, false);
-      }
-    }, { rootMargin:'-45% 0px -45% 0px', threshold:[0,.25,.5,.75,1] });
-
-    sections.forEach(s=>io.observe(s));
-
-    // Inicio
-    const start = sections.findIndex(s => '#'+s.id === location.hash);
-    setActive(start>=0?start:0,false);
-
-    // Exponer helpers globales para charts (para el lazy-init)
-    window.__sectionHelpers = { setActive, sections };
-  })();
-
-  // ================== CHARTS (LAZY INIT + MEJORAS) ==================
-  Chart.register(ChartDataLabels); // Plugin para porcentajes
-
-  // Colores consistentes
-  const chartColors = {
-    blue: '#3B82F6', lightBlue: '#93C5FD', green:'#10B981',
-    yellow:'#F59E0B', red:'#EF4444', purple:'#8B5CF6', gray:'#6B7280'
-  };
-
-  // Opciones base
-  const baseOpts = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins:{
-      legend:{ position:'bottom', labels:{ font:{ family:"Inter, system-ui, sans-serif", size:14 }, padding:16 } },
-      tooltip:{ enabled:true },
-      // Opciones por defecto para datalabels: fondo semi-oscuro, padding y tamaño legible
-      datalabels: {
-        color: '#ffffff',
-        backgroundColor: 'rgba(0,0,0,0.55)',
-        borderRadius: 6,
-        padding: 6,
-        font: { weight: '700', size: 12 },
-        clamp: true,
-        anchor: 'center',
-        align: 'center'
-      }
-    },
-    scales:{
-      x:{ grid:{ display:false }, ticks:{ font:{ family:"Inter, system-ui, sans-serif", size:13 } } },
-      y:{ grid:{ color:'#E7E5E4' }, ticks:{ font:{ family:"Inter, system-ui, sans-serif", size:13 } } }
-    }
-  };
-
-  // Datos
-  const demandData = {
-    labels: ['2010','2015','2020','2025','2030'],
-    data: [81.58,86.26,90.75,94.95,98.81]
-  };
-
-  const competitorInfo = {
-    base: {
-      'Importados': 'Precios bajos pero alta vulnerabilidad al tipo de cambio, costos logísticos elevados y servicio postventa deficiente.',
-      'DVS S.R.L.': 'Principal competidor nacional (ISO 13485), posicionamiento premium.',
-      'Tecnon S.R.L.': 'Planta en Berisso; foco en sector público provincial, buena relación precio/capacidad.',
-      'Hermax': 'Productor nacional de menor escala con alcance regional y producción flexible.'
-    },
-    year5: {
-      'Importados': 'Precios bajos pero alta vulnerabilidad al tipo de cambio, costos logísticos elevados y servicio postventa deficiente.',
-      'DVS S.R.L.': 'Principal competidor nacional (ISO 13485), posicionamiento premium.',
-      'Tecnon S.R.L.': 'Planta en Berisso; foco en sector público provincial, buena relación precio/capacidad.',
-      'Hermax': 'Objetivo: 33% del mercado con planta automatizada y costos competitivos.'
-    }
-  };
-
-  const segmentData = { labels:['Hospitales Públicos','Privados','Veterinarias'], data:[60,35,5] };
-  const growthData  = { labels:['Año 1','Año 2','Año 3','Año 4','Año 5'], production:[13.5,18,22.5,26.25,30.0], marketShare:[15,20,25,29.2,33.3] };
-  const mixData     = { labels:['EDTA 3k','Heparina de litio','Gel + Activador','Citrato 3.2%','Citrato 3.8%','Otros'], data:[38,20,15,10,10,7] };
-
-  // Lazy-init: solo crea el chart cuando entra a viewport
-  const created = {};
-
-  // Datos por año para el gráfico competitivo (ejemplo simple)
-  const competitorByYear = {
-    1: [45,30,15,10],
-    2: [38,30,17,15],
-    3: [33,27,15,25],
-    4: [28,24,15,33],
-    5: [25,22,20,33] // año 5: Hermax (nuestro proyecto) alcanza el 33%
-  };
-  const competitorColors = [chartColors.red, chartColors.purple, chartColors.yellow, chartColors.green];
-
-  function initDemand(){
-    if (created.demand) return;
-    const ctx = document.getElementById('demandChart');
-    if (!ctx) return;
-    created.demand = new Chart(ctx.getContext('2d'),{
-      type:'line',
-      data:{ labels:demandData.labels, datasets:[{
-        label:'Demanda Anual (Millones de Tubos)',
-        data:demandData.data,
-        borderColor:chartColors.blue,
-        backgroundColor:'rgba(59,130,246,.12)',
-        fill:true, tension:.3
-      }] },
-      options: {
-        ...baseOpts,
-        scales: {
-          x: baseOpts.scales.x,
-          y: { ...baseOpts.scales.y, min:80, max:100, title:{display:true, text:'Millones de Tubos'} }
-        }
-      }
-    });
-  }
-
-  function initCompetitors(){
-    if (created.competitors) return;
-    const ctx = document.getElementById('competitorChart');
-    if (!ctx) return;
-
-    let activeYear = null; // null = base
-    const infoPanel = document.getElementById('competitor-info');
-    const renderInfo = (label) => {
-      const source = activeYear === 5 ? competitorInfo.year5 : competitorInfo.base;
-      const description = source[label] || '';
-      infoPanel.innerHTML = '<h4 class="font-bold text-gray-700">' + label + '</h4><p class="text-gray-600 text-sm">' + description + '</p>';
+    // -----------------------------
+    // Datos (ajustables)
+    // -----------------------------
+    const demandData = {
+      labels: ['2010','2015','2020','2025','2030'],
+      data: [81.58, 86.26, 90.75, 94.95, 98.81]
     };
 
-    const chart = new Chart(ctx.getContext('2d'),{
+    const competitorData = {
+      labels: ['Importados', 'DVS S.R.L.', 'Tecnon S.R.L.', 'Hermax', 'Nuestro Proyecto (Y5)'],
+      data: [45, 30, 15, 10, 0],
+      info: {
+        'Importados': { title: 'Importados', text: 'Precios bajos pero sensibles al d\u00f3lar; costos log\u00edsticos altos y soporte posventa limitado.' },
+        'DVS S.R.L.': { title: 'DVS S.R.L.', text: 'Principal actor nacional, ISO 13485, posicionamiento premium y cobertura amplia.' },
+        'Tecnon S.R.L.': { title: 'Tecnon S.R.L.', text: 'Foco en sector p\u00fablico provincial; precios competitivos; capacidad acotada.' },
+        'Hermax': { title: 'Hermax', text: 'Alcance regional, nichos privados y veterinarios; alta flexibilidad.' },
+        'Nuestro Proyecto (Y5)': { title: 'Nuestro Proyecto (Meta Ano 5)', text: 'Objetivo 33% de share con planta automatizada y costos competitivos.' }
+      }
+    };
+
+    const segmentData = {
+      labels: ['Hospitales p\u00fablicos', 'Laboratorios/Cl\u00ednicas', 'Veterinarias'],
+      data: [60, 35, 5]
+    };
+
+    const growthData = {
+      labels: ['A\u00f1o 1','A\u00f1o 2','A\u00f1o 3','A\u00f1o 4','A\u00f1o 5'],
+      production: [13.5, 18.0, 22.5, 26.25, 30.0],
+      marketShare: [15.0, 20.0, 25.0, 29.2, 33.3]
+    };
+
+    const productionMixData = {
+      labels: ['EDTA 3K','Heparina de litio','Gel + Activador','Citrato 3.2%','Citrato 3.8%','Otros'],
+      data: [38, 20, 15, 10, 10, 7]
+    };
+
+    const costData = {
+      labels: ['Estructura de Costos'],
+      datasets: [
+        { label: 'Costos Variables', data: [65], backgroundColor: '#3B82F6' },
+        { label: 'Costos Fijos', data: [35], backgroundColor: '#93C5FD' }
+      ]
+    };
+
+    const colors = {
+      blue:'#3B82F6', lightBlue:'#93C5FD', green:'#10B981', yellow:'#F59E0B', red:'#EF4444', purple:'#8B5CF6', gray:'#6B7280'
+    };
+
+    // -----------------------------
+    // Opciones comunes de Chart.js
+    // -----------------------------
+    const defaultChartOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 900, easing: 'easeInOutQuart' },
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            padding: 16,
+            color: '#1f2937',
+            font: { family: "'Inter', sans-serif", size: 14, weight: '600' }
+          }
+        },
+        tooltip: {
+          enabled: true,
+          backgroundColor: '#111827',
+          padding: 12,
+          titleFont: { family: "'Inter', sans-serif", weight: '700', size: 14 },
+          bodyFont: { family: "'Inter', sans-serif", size: 13 }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: '#334155', font: { family: "'Inter', sans-serif", size: 13 } },
+          title: { color: '#334155', font: { family: "'Inter', sans-serif", size: 13, weight: '600' } }
+        },
+        y: {
+          grid: { color: '#E7E5E4' },
+          ticks: { color: '#334155', font: { family: "'Inter', sans-serif", size: 13 } },
+          title: { color: '#334155', font: { family: "'Inter', sans-serif", size: 13, weight: '600' } }
+        }
+      }
+    };
+function buildToggleButtons(containerId, labels, onSelect){
+      const container = document.getElementById(containerId);
+      if (!container) return null;
+      container.innerHTML = '';
+      const buttons = labels.map((label, index) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'chart-toggle';
+        btn.textContent = label;
+        btn.setAttribute('aria-pressed', 'false');
+        btn.addEventListener('click', () => onSelect(index));
+        container.appendChild(btn);
+        return btn;
+      });
+      return function setActive(activeIndex){
+        buttons.forEach((btn, idx) => {
+          const isActive = idx === activeIndex;
+          btn.classList.toggle('is-active', isActive);
+          btn.setAttribute('aria-pressed', String(isActive));
+        });
+      };
+    }
+
+    function formatMillions(value){
+      const decimalPlaces = Number.isInteger(value) ? 0 : 2;
+      return `${value.toFixed(decimalPlaces)} millones de tubos`;
+    }
+
+    function formatShare(value){
+      return `${value.toFixed(1)}% de cuota`;
+    }
+
+    // -----------------------------
+    // Inicialización de gráficos
+    // -----------------------------
+    const ctxDemand = document.getElementById('demandChart').getContext('2d');
+    const demandChart = new Chart(ctxDemand, {
+      type:'line',
+      data:{
+        labels: demandData.labels,
+        datasets:[{
+          label:'Demanda anual (millones de tubos)',
+          data: demandData.data,
+          borderColor: colors.blue,
+          backgroundColor: 'rgba(59,130,246,.12)',
+          fill:true,
+          tension:.3,
+          pointRadius: demandData.labels.map(() => 4),
+          pointHoverRadius: demandData.labels.map(() => 6),
+          pointBackgroundColor: demandData.labels.map(() => colors.blue),
+          pointBorderWidth: 2
+        }]
+      },
+      options: defaultChartOptions
+    });
+
+    const demandDetail = document.getElementById('demandYearDetail');
+    let setDemandActive = null;
+    function selectDemandYear(index){
+      if (!demandChart) return;
+      const baseRadius = 4;
+      const highlightRadius = 8;
+      const dataset = demandChart.data.datasets[0];
+      dataset.pointRadius = demandData.labels.map((_, i) => i === index ? highlightRadius : baseRadius);
+      dataset.pointHoverRadius = demandData.labels.map((_, i) => i === index ? highlightRadius + 2 : baseRadius + 2);
+      dataset.pointBackgroundColor = demandData.labels.map((_, i) => i === index ? colors.green : colors.blue);
+      dataset.pointBorderColor = demandData.labels.map((_, i) => i === index ? colors.green : colors.blue);
+      demandChart.update();
+      if (setDemandActive) setDemandActive(index);
+      if (demandDetail){
+        const label = demandData.labels[index];
+        const value = demandData.data[index];
+                demandDetail.textContent = `Demanda estimada ${label}: ${formatMillions(value)}`;
+      }
+    }
+
+    setDemandActive = buildToggleButtons('demandYearControls', demandData.labels, selectDemandYear);
+    
+    // Inicializa todos los años de manera consistente
+    document.addEventListener('DOMContentLoaded', () => {
+      // Para Demanda, último año
+      selectDemandYear(demandData.labels.length - 1);
+      
+      // Para Crecimiento, último año
+      if (growthData && growthData.labels) {
+        selectGrowthYear(growthData.labels.length - 1);
+      }
+    });
+
+    const ctxCompetitor = document.getElementById('competitorChart').getContext('2d');
+    const competitorChart = new Chart(ctxCompetitor, {
       type:'doughnut',
       data:{
-        labels:['Importados','DVS S.R.L.','Tecnon S.R.L.','Hermax'],
+        labels: competitorData.labels.slice(0,4),
         datasets:[{
-          data:[45,30,15,10],
-          backgroundColor: competitorColors,
+          label:'Cuota de Mercado',
+          data: [45,30,15,10],
+          backgroundColor:[colors.red, colors.purple, colors.yellow, colors.gray],
           borderColor:'#fff', borderWidth:2
         }]
       },
       options:{
-        ...baseOpts,
-        plugins:{
-          ...baseOpts.plugins,
-          datalabels:{ formatter:(v)=>v+'%', font:{weight:'700', size:13}, backgroundColor:'rgba(0,0,0,0.6)', color:'#fff' }
-        },
-        onClick:(evt, els)=>{
-          if (els.length){
-            const idx = els[0].index;
-            const label = chart.data.labels[idx];
-            renderInfo(label);
+        ...defaultChartOptions,
+        plugins:{ legend:{ display:true, position:'right' } },
+        onClick: (evt, elements) => {
+          if(!elements.length) return;
+          const idx = elements[0].index;
+          const label = competitorChart.data.labels[idx];
+          const info = competitorData.info[label];
+          if(!info) return;
+          const box = document.getElementById('competitor-info');
+          box.innerHTML = `<h4 class="font-bold text-lg text-gray-700">${info.title}</h4><p class="text-gray-600 text-sm">${info.text}</p>`;
+        }
+      }
+    });
+
+    // Simulación de entrada del nuevo competidor (nuestro proyecto)
+    setTimeout(()=>{
+      competitorChart.data.labels = competitorData.labels;
+      competitorChart.data.datasets[0].data = [25,20,10,5,33];
+      competitorChart.data.datasets[0].backgroundColor = [colors.red, colors.purple, colors.yellow, colors.gray, colors.green];
+      competitorChart.update();
+    }, 4000);
+
+    const ctxSegment = document.getElementById('segmentChart').getContext('2d');
+    new Chart(ctxSegment, {
+      type:'bar',
+      data:{ labels: segmentData.labels, datasets:[{ label:'% del Mercado', data:segmentData.data, backgroundColor:[colors.blue, colors.lightBlue, colors.green] }]},
+      options:{
+        ...defaultChartOptions, indexAxis:'y',
+        plugins:{ legend:{ display:false }},
+        scales:{
+          x:{ beginAtZero:true, max:100, grid:{ color:'#E7E5E4' }, ticks:{ callback:(v)=>`${v}%`, font:{ family:"'Inter', sans-serif" }}},
+          y:{ grid:{ display:false }, ticks:{ font:{ family:"'Inter', sans-serif" }}}
+        }
+      }
+    });
+
+    const ctxGrowth = document.getElementById('growthChart').getContext('2d');
+    const growthChart = new Chart(ctxGrowth, {
+      type:'bar',
+      data:{
+        labels: growthData.labels,
+        datasets:[
+          {
+            label:'Produccion (millones de tubos)',
+            data:growthData.production,
+            backgroundColor: growthData.production.map(() => colors.blue),
+            borderColor: growthData.production.map(() => colors.blue),
+            borderRadius: 6,
+            yAxisID:'y'
+          },
+          {
+            label:'Cuota de mercado (%)',
+            data:growthData.marketShare,
+            type:'line',
+            borderColor: colors.green,
+            backgroundColor: 'transparent',
+            tension:.3,
+            yAxisID:'y1',
+            pointRadius: growthData.marketShare.map(() => 4),
+            pointHoverRadius: growthData.marketShare.map(() => 6),
+            pointBackgroundColor: growthData.marketShare.map(() => colors.green),
+            pointBorderColor: colors.green,
+            borderWidth: 2
           }
-        }
-      }
-    });
-
-    // Botones Año 1..5
-    const yearButtons = Array.from(document.querySelectorAll('.year-btn'));
-    const baseLabels = ['Importados','DVS S.R.L.','Tecnon S.R.L.','Hermax'];
-    const baseData = competitorByYear[1] || [45,30,15,10];
-    const activeClasses = ['bg-blue-600','text-white','font-bold','hover:bg-blue-700'];
-    const inactiveClasses = ['bg-gray-200','text-gray-800','font-semibold','hover:bg-gray-300'];
-
-    const setButtonState = (btn, isActive) => {
-      activeClasses.forEach(c => btn.classList[isActive ? 'add' : 'remove'](c));
-      inactiveClasses.forEach(c => btn.classList[isActive ? 'remove' : 'add'](c));
-      btn.textContent = isActive ? 'Volver estado actual' : `Año ${btn.getAttribute('data-year')}`;
-    };
-
-    const setButtonActive = (btn) => setButtonState(btn, true);
-    const setButtonInactive = (btn) => setButtonState(btn, false);
-
-    yearButtons.forEach(setButtonInactive);
-
-    // Comportamiento unificado: todos los botones (1..5) actúan como toggles similares a Año 5
-    yearButtons.forEach(b=>{
-      b.addEventListener('click', ()=>{
-        const year = Number(b.getAttribute('data-year'));
-
-        if (activeYear === year){
-          activeYear = null;
-          yearButtons.forEach(setButtonInactive);
-          chart.data.labels = baseLabels;
-          chart.data.datasets[0].data = baseData;
-          chart.data.datasets[0].backgroundColor = competitorColors;
-          chart.update();
-          renderInfo(baseLabels[0]);
-          return;
-        }
-
-        activeYear = year;
-        yearButtons.forEach(setButtonInactive);
-        setButtonActive(b);
-
-        if (year === 5){
-          // Año 5: Hermax (nuestro proyecto) alcanza el 33%
-          chart.data.labels = ['Importados','DVS S.R.L.','Tecnon S.R.L.','Hermax'];
-          chart.data.datasets[0].data = competitorByYear[5];
-          chart.data.datasets[0].backgroundColor = competitorColors;
-        } else {
-          // Años 1..4: mostrar datos para las cuatro categorías principales
-          chart.data.labels = baseLabels;
-          const data = competitorByYear[year] || baseData;
-          chart.data.datasets[0].data = data;
-          chart.data.datasets[0].backgroundColor = [chartColors.red, chartColors.purple, chartColors.yellow, chartColors.gray];
-          chart.update();
-          renderInfo(chart.data.labels[0]);
-        }
-      });
-    });
-
-    renderInfo(baseLabels[0]);
-    created.competitors = chart;
-  }
-
-  function initSegments(){
-    if (created.segments) return;
-    const ctx = document.getElementById('segmentChart');
-    if (!ctx) return;
-    created.segments = new Chart(ctx.getContext('2d'),{
-      type:'bar',
-      data:{ labels:segmentData.labels, datasets:[{
-        label:'% del Mercado',
-        data:segmentData.data,
-        backgroundColor:[chartColors.blue,chartColors.lightBlue,chartColors.green]
-      }]},
-      options:{
-        ...baseOpts,
-        indexAxis:'y',
-        plugins:{
-          ...baseOpts.plugins,
-          datalabels:{ anchor:'end', align:'right', formatter:(v)=>v+'%', font:{size:13, weight:'700'}, color:'#111', backgroundColor:'rgba(255,255,255,0.85)' }
-        },
-        scales:{
-          x:{ beginAtZero:true, max:100, ticks:{ callback:(v)=>v+'%' }, grid:{ color:'#E7E5E4' } },
-          y:{ grid:{ display:false } }
-        }
-      }
-    });
-  }
-
-  function initGrowth(){
-    if (created.growth) return;
-    const ctx = document.getElementById('growthChart');
-    if (!ctx) return;
-    created.growth = new Chart(ctx.getContext('2d'),{
-      type:'bar',
-      data:{
-        labels:growthData.labels,
-        datasets:[
-          { type:'bar',  label:'Producción (M de tubos)', data:growthData.production, backgroundColor:chartColors.blue, yAxisID:'y' },
-          { type:'line', label:'Cuota de Mercado (%)',    data:growthData.marketShare, borderColor:chartColors.green, tension:.3, yAxisID:'y1' }
         ]
       },
       options:{
-        ...baseOpts,
+        ...defaultChartOptions,
         scales:{
-          x: baseOpts.scales.x,
-          y:  { type:'linear', position:'left',  title:{display:true, text:'Millones de tubos'} },
-          y1: { type:'linear', position:'right', title:{display:true, text:'% Mercado'}, grid:{ drawOnChartArea:false } }
-        },
-        plugins:{
-          ...baseOpts.plugins,
-          datalabels:{ formatter:(v,ctx)=> ctx.dataset.type==='line' ? v+'%' : v, font:{size:12, weight:'700'}, backgroundColor:'rgba(255,255,255,0.92)', color:'#111' }
+          x:{ ...defaultChartOptions.scales.x },
+          y:{ type:'linear', display:true, position:'left', title:{ display:true, text:'Millones de tubos' } },
+          y1:{ type:'linear', display:true, position:'right', title:{ display:true, text:'% de mercado' }, grid:{ drawOnChartArea:false } }
         }
       }
     });
-  }
+    const growthDetail = document.getElementById('growthYearDetail');
+    let setGrowthActive = null;
+    function selectGrowthYear(index){
+      if (!growthChart) return;
+      const barDataset = growthChart.data.datasets[0];
+      const lineDataset = growthChart.data.datasets[1];
+      barDataset.backgroundColor = growthData.production.map((_, i) => i === index ? colors.purple : colors.blue);
+      barDataset.borderColor = growthData.production.map((_, i) => i === index ? colors.purple : colors.blue);
+      lineDataset.pointRadius = growthData.marketShare.map((_, i) => i === index ? 8 : 4);
+      lineDataset.pointHoverRadius = growthData.marketShare.map((_, i) => i === index ? 10 : 6);
+      lineDataset.pointBackgroundColor = growthData.marketShare.map((_, i) => i === index ? colors.purple : colors.green);
+      lineDataset.pointBorderColor = growthData.marketShare.map((_, i) => i === index ? colors.purple : colors.green);
+      growthChart.update();
+      if (setGrowthActive) setGrowthActive(index);
+      if (growthDetail){
+        const production = growthData.production[index];
+        const share = growthData.marketShare[index];
+        const label = `A\u00f1o ${index + 1}`;
+        growthDetail.textContent = `${label}: ${formatMillions(production)} | ${formatShare(share)}`;
+      }
+    }
 
-  function initMix(){
-    if (created.mix) return;
-    const ctx = document.getElementById('productionMixChart');
-    if (!ctx) return;
-    created.mix = new Chart(ctx.getContext('2d'),{
+    const growthToggleLabels = growthData.labels.map((_, idx) => `A\u00f1o ${idx + 1}`);
+    setGrowthActive = buildToggleButtons('growthYearControls', growthToggleLabels, selectGrowthYear);
+    selectGrowthYear(growthData.labels.length - 1);
+
+    const ctxProductionMix = document.getElementById('productionMixChart').getContext('2d');
+    new Chart(ctxProductionMix, {
       type:'pie',
-      data:{ labels:mixData.labels, datasets:[{ data:mixData.data, backgroundColor:[
-        chartColors.blue, chartColors.purple, chartColors.green, chartColors.yellow, chartColors.lightBlue, chartColors.gray
-      ]}]},
-      options:{
-        ...baseOpts,
-        plugins:{
-          legend:{ position:'right' },
-          datalabels:{ formatter:(v)=>v+'%', font:{size:13, weight:'700'}, backgroundColor:'rgba(0,0,0,0.6)', color:'#fff' }
-        }
-      }
-    });
-  }
-
-  function initCosts(){
-    if (created.costs) return;
-    const ctx = document.getElementById('costChart');
-    if (!ctx) return;
-    created.costs = new Chart(ctx.getContext('2d'),{
-      type:'bar',
       data:{
-        labels:['Estructura de Costos'],
-        datasets:[
-          { label:'Costos Variables', data:[65], backgroundColor:chartColors.blue, stack:'cost' },
-          { label:'Costos Fijos',     data:[35], backgroundColor:chartColors.lightBlue, stack:'cost' }
-        ]
+        labels: productionMixData.labels,
+        datasets:[{ label:'% de Producción', data: productionMixData.data,
+                    backgroundColor:[colors.blue, colors.purple, colors.green, colors.yellow, colors.lightBlue, colors.gray] }]
       },
+      options:{ ...defaultChartOptions, plugins:{ legend:{ position:'right' } } }
+    });
+
+    const ctxCost = document.getElementById('costChart').getContext('2d');
+    new Chart(ctxCost, {
+      type:'bar',
+      data: costData,
       options:{
-        ...baseOpts,
-        indexAxis:'y',
+        ...defaultChartOptions, indexAxis:'y',
         scales:{
-          x:{ stacked:true, ticks:{ callback:(v)=>v+'%' } },
+          x:{ stacked:true, ticks:{ callback:(v)=>`${v}%` } },
           y:{ stacked:true, grid:{ display:false } }
         },
         plugins:{
-          ...baseOpts.plugins,
-          datalabels:{ formatter:(v,ctx)=> ctx.dataset.label + ': ' + v + '%', anchor:'center', color:'#fff', font:{size:12, weight:'700'}, backgroundColor:'rgba(0,0,0,0.6)' }
+          ...defaultChartOptions.plugins,
+          tooltip:{ callbacks:{ label:(c)=>`${c.dataset.label}: ${c.raw}%` } }
         }
       }
     });
-  }
 
-  // Observa cada canvas y crea el gráfico cuando aparece
-  const charts = [
-    ['demandChart', initDemand],
-    ['competitorChart', initCompetitors],
-    ['segmentChart', initSegments],
-    ['growthChart', initGrowth],
-    ['productionMixChart', initMix],
-    ['costChart', initCosts]
-  ];
+    // -----------------------------
+    // Modo Presentación (scroll por secciones)
+    // -----------------------------
+    const sectionIds = ['introduccion','objetivos','producto','oportunidad','plan','operaciones','estrategia'];
+    const sections = sectionIds.map(id => document.getElementById(id));
+    const nextBtn = document.getElementById('nextBtn');
+    const presentToggleBtn = document.getElementById('presentToggleBtn');
+    const mainContent = document.querySelector('main');
 
-  const co = new IntersectionObserver((entries)=>{
-    entries.forEach(e=>{
-      if(e.isIntersecting){
-        const id = e.target.id;
-        const item = charts.find(c => c[0]===id);
-        if (item) item[1]();
+    let presentationMode = false;
+    let currentSectionIndex = sectionInViewIndex();
+
+    function sectionInViewIndex() {
+      const scrollPos = window.scrollY;
+      const headerHeight = 80;
+      const viewportHeight = window.innerHeight;
+      const threshold = viewportHeight * 0.3; // 30% del viewport
+
+      let bestIndex = 0;
+      let bestVisibility = 0;
+
+      sections.forEach((section, index) => {
+        if (!section) return;
+
+        const rect = section.getBoundingClientRect();
+        const sectionTop = rect.top;
+        const sectionHeight = rect.height;
+        
+        // Calcula qué tan visible está la sección en el viewport
+        let visibleHeight = 0;
+        
+        if (sectionTop < headerHeight) {
+          // Sección que comienza arriba del viewport
+          visibleHeight = Math.min(sectionHeight, viewportHeight - headerHeight + Math.abs(sectionTop));
+        } else {
+          // Sección que comienza dentro o debajo del viewport
+          visibleHeight = Math.min(viewportHeight - sectionTop, sectionHeight);
+        }
+
+        // Normaliza la visibilidad como porcentaje de la altura de la sección
+        const visibility = Math.max(0, visibleHeight) / sectionHeight;
+
+        if (visibility > bestVisibility) {
+          bestVisibility = visibility;
+          bestIndex = index;
+        }
+      });
+
+      return bestIndex;
+    }
+
+    function updateNextButton(){
+      if (!nextBtn) return;
+      if (presentationMode){
+        const isLast = currentSectionIndex >= sections.length - 1;
+        nextBtn.textContent = isLast ? 'Finalizar presentación' : 'Siguiente bloque';
+        nextBtn.title = isLast ? 'Salir del modo presentación' : 'Ir al siguiente bloque';
+      } else {
+        nextBtn.textContent = 'Siguiente sección';
+        nextBtn.title = 'Ir a la siguiente sección';
+      }
+    }
+
+    function updatePresentButton(){
+      if (!presentToggleBtn) return;
+      presentToggleBtn.textContent = presentationMode ? 'Salir de presentación' : 'Modo presentación';
+      presentToggleBtn.setAttribute('aria-pressed', presentationMode);
+    }
+
+    function activateSection(index, { scrollIntoView = true } = {}) {
+      currentSectionIndex = Math.max(0, Math.min(index, sections.length - 1));
+      const currentSection = sections[currentSectionIndex];
+      
+      if (!currentSection) return;
+
+      if (presentationMode) {
+        // Desactiva todas las secciones primero
+        sections.forEach(section => {
+          if (section) section.classList.remove('presentation-active');
+        });
+        
+        // Activa solo la sección actual
+        currentSection.classList.add('presentation-active');
+        
+        if (scrollIntoView) {
+          // Calcula el offset considerando el header fijo
+          const headerHeight = 80; // Altura del header
+          const sectionTop = currentSection.offsetTop - headerHeight;
+          
+          // Asegura un scroll suave a la posición correcta
+          window.scrollTo({
+            top: Math.max(0, sectionTop),
+            behavior: 'smooth'
+          });
+        }
+      } else if (scrollIntoView) {
+        // En modo normal, usa scrollIntoView con offset
+        const headerHeight = 80;
+        const sectionTop = currentSection.offsetTop - headerHeight;
+        window.scrollTo({
+          top: Math.max(0, sectionTop),
+          behavior: 'smooth'
+        });
+      }
+      
+      updateNextButton();
+    }
+
+    function enterPresentation(){
+      presentationMode = true;
+      document.body.classList.add('presentation-mode');
+      currentSectionIndex = sectionInViewIndex();
+      activateSection(currentSectionIndex, { scrollIntoView: true });
+      updatePresentButton();
+    }
+
+    function exitPresentation(){
+      presentationMode = false;
+      document.body.classList.remove('presentation-mode');
+      sections.forEach(section => section?.classList.remove('presentation-active'));
+      updatePresentButton();
+      updateNextButton();
+      sections[currentSectionIndex]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function goToNext(){
+      if (presentationMode){
+        if (currentSectionIndex >= sections.length - 1){
+          exitPresentation();
+          return;
+        }
+        activateSection(currentSectionIndex + 1);
+      } else {
+        const i = sectionInViewIndex();
+        const next = Math.min(i + 1, sections.length - 1);
+        sections[next]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    function goToPrev(){
+      if (presentationMode){
+        if (currentSectionIndex <= 0) return;
+        activateSection(currentSectionIndex - 1);
+      } else {
+        const i = sectionInViewIndex();
+        const prev = Math.max(i - 1, 0);
+        sections[prev]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    updateNextButton();
+    updatePresentButton();
+
+    window.addEventListener('scroll', () => {
+      if (!presentationMode){
+        currentSectionIndex = sectionInViewIndex();
       }
     });
-  }, { rootMargin:'-10% 0px -10% 0px', threshold:.2 });
 
-  charts.forEach(([id])=>{
-    const el = document.getElementById(id);
-    if (el) co.observe(el);
-  });
+    window.addEventListener('keydown', (e) => {
+      const tag = e.target?.tagName;
+      if (tag && ['INPUT','TEXTAREA','SELECT'].includes(tag)) return;
+      if (['ArrowDown','PageDown',' '].includes(e.key)){
+        e.preventDefault();
+        goToNext();
+      }
+      if (['ArrowUp','PageUp'].includes(e.key)){
+        e.preventDefault();
+        goToPrev();
+      }
+      if (e.key === 'Escape' && presentationMode){
+        e.preventDefault();
+        exitPresentation();
+      }
+    });
+
+    nextBtn?.addEventListener('click', goToNext);
+    presentToggleBtn?.addEventListener('click', () => {
+      presentationMode ? exitPresentation() : enterPresentation();
+    });
+
+    // Resaltado suave del bloque activo
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach(entry=>{
+        const cards = entry.target.querySelectorAll('.section-card');
+        cards.forEach(c => c.classList.toggle('highlight', entry.isIntersecting && entry.intersectionRatio > 0.6));
+      });
+    }, { threshold:[0.6] });
+    sections.forEach(s => io.observe(s));
   </script>
-
-  <footer class="bg-white border-t mt-10">
-    <div class="container mx-auto px-6 py-4 text-center text-gray-500">
-      <p>&copy; 2025 - Proyecto Final: Alvarez, Colillán, Echeverría, Sarena.</p>
-    </div>
-  </footer>
 </body>
-
 </html>
